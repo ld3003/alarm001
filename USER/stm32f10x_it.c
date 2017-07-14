@@ -22,6 +22,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x_it.h"
+#include "utimer.h"
+#include "serialport.h"
 
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{
@@ -133,7 +135,78 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
+	systick_handle();
 }
+
+
+unsigned char __debug_uart_flag = 0;
+unsigned char *__debug_uart_buffer = 0;
+unsigned int __debug_uart_buffer_index = 0;
+#include "common.h"
+#include "mem.h"
+
+#define ENABLE_UART_DEBUG
+
+void start_uart_debug(void)
+{
+	#ifdef ENABLE_UART_DEBUG
+	__debug_uart_flag = 1;
+	__debug_uart_buffer = alloc_mem(__FILE__,__LINE__,1024);
+	__debug_uart_buffer_index = 0;
+	__debug_uart_buffer[0] = 0x0;
+	#endif
+}
+
+void stop_uart_debug(void)
+{
+	#ifdef ENABLE_UART_DEBUG
+	__debug_uart_flag = 0;
+	printf("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\r\n");
+	printf("MODEM_UART DEBUG STR:[%s]\r\n",__debug_uart_buffer);
+	debug_buf("MODEM_UART DEBUG HEX ",__debug_uart_buffer,__debug_uart_buffer_index);
+	printf("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\r\n");
+	free_mem(__FILE__,__LINE__,__debug_uart_buffer);
+	#endif
+	//
+}
+
+void USART2_IRQHandler(void)
+{
+	
+	//Ω” ’ ˝æ›
+	if(USART_GetITStatus(USART2, USART_IT_RXNE) != RESET)
+	{
+		
+		USART_ClearITPendingBit(USART2, USART_IT_RXNE);
+		if (uart2_rx_buffer_index < UART2_RX_BUF_LEN)
+		{
+			//unsigned char dat = USART_ReceiveData(USART2);
+			uart2_rx_buffer[uart2_rx_buffer_index++] = USART_ReceiveData(USART2);
+			#if 1
+			#ifdef ENABLE_UART_DEBUG
+			if (__debug_uart_flag == 1)
+			{
+				__debug_uart_buffer[__debug_uart_buffer_index ++] = uart2_rx_buffer[uart2_rx_buffer_index-1];
+			}
+			#endif
+			#endif
+		}else{
+			USART_ITConfig(USART2, USART_IT_RXNE, DISABLE);
+			USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
+			USART_Cmd(USART2, DISABLE);
+			USART_Cmd(USART2, ENABLE);//Í1?¸'??˙1
+		}
+		
+		
+		
+  }else{
+				USART_ClearITPendingBit(USART2, USART_IT_ORE);
+	}
+	//»Áπ˚ «“Á≥ˆ÷–∂œ£¨‘Ú«Â≥˝“Á≥ˆ
+	
+	
+}
+
 
 /******************************************************************************/
 /*                 STM32F10x Peripherals Interrupt Handlers                   */

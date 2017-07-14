@@ -22,7 +22,13 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x.h"
+#include "bsp.h"
 #include <stdio.h>
+#include "utimer.h"
+#include "task.h"
+#include "mem.h"
+#include "serialport.h"
+#include "mainloop.h"
 
 #ifdef __GNUC__
   /* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
@@ -32,8 +38,11 @@
   #define PUTCHAR_PROTOTYPE int fputc(int ch, FILE *f)
 #endif /* __GNUC__ */
 
-/* Private function prototypes -----------------------------------------------*/
-void USART_Configuration(void);
+
+static void test_timer(void *arg)
+{
+	printf("timer ....\r\n");
+}
 
 /*******************************************************************************
 * Function Name  : main
@@ -45,62 +54,42 @@ void USART_Configuration(void);
 *******************************************************************************/
 int main(void)
 {
-	USART_Configuration();
-    printf("*****************************************************************\r\n");
-    printf("*                                                               *\r\n");
-    printf("*  Thank you for using HY-RedBull V3.0 Development Board ! ^_^  *\r\n");
-    printf("*                                                               *\r\n");
-    printf("*****************************************************************\r\n");
-   	printf("\r\nPlease input any word :\r\n");
-    /* Infinite loop */
-    while (1){
+	
+	
+	
+	SysTick_Config(SystemCoreClock / 100);
+	init_uart1();
+	init_uart2();
+	
+	init_utimer();
+	init_task();
+	init_mem();
+	init_uart2_buffer();
+	
+	//启动一个定时器，进行喂狗操作
+	timerlist[0].func = test_timer;
+	timerlist[0].arg = 0;
+	timerlist[0].type = 0;
+	timerlist[0].__dangqian = 0;
+	timerlist[0].__zhouqi = 10;
+	timerlist[0].enable = 1;
+	
+	for(;;)
+	{
+		run_task();
+		mainloop();
+	}
+	
+	while (1){
 		/* Loop until RXNE = 1 */
-        while (USART_GetFlagStatus(USART1, USART_FLAG_RXNE) == RESET);
+				while (USART_GetFlagStatus(USART1, USART_FLAG_RXNE) == RESET);
 		USART_SendData(USART1,USART_ReceiveData(USART1));
-    }
+	}
 }
 
 
-/*******************************************************************************
-* Function Name  : USART_Configuration
-* Description    : Configure USART1 
-* Input          : None
-* Output         : None
-* Return         : None
-* Attention		 : None
-*******************************************************************************/
-void USART_Configuration(void)
-{ 
-  GPIO_InitTypeDef GPIO_InitStructure;
-  USART_InitTypeDef USART_InitStructure; 
 
-  RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOA | RCC_APB2Periph_USART1,ENABLE);
-  /*
-  *  USART1_TX -> PA9 , USART1_RX ->	PA10
-  */				
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_9;	         
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP; 
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
-  GPIO_Init(GPIOA, &GPIO_InitStructure);		   
 
-  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;	        
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;  
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
-  GPIO_Init(GPIOA, &GPIO_InitStructure);
-
-  USART_InitStructure.USART_BaudRate = 115200;
-  USART_InitStructure.USART_WordLength = USART_WordLength_8b;
-  USART_InitStructure.USART_StopBits = USART_StopBits_1;
-  USART_InitStructure.USART_Parity = USART_Parity_No;
-  USART_InitStructure.USART_HardwareFlowControl = USART_HardwareFlowControl_None;
-  USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
-
-  USART_Init(USART1, &USART_InitStructure); 
-  USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
-  USART_ITConfig(USART1, USART_IT_TXE, ENABLE);
-  USART_ClearFlag(USART1,USART_FLAG_TC);
-  USART_Cmd(USART1, ENABLE);
-}
 
 /**
   * @brief  Retargets the C library printf function to the USART.
