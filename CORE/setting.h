@@ -20,10 +20,10 @@
 #define WAIT_UDP_PKG_TIME					10000
 
 //服务器信息 
-#define SERVER_ADDR								"52.80.4.27"
-#define SERVER_PORT								29100
-//#define SERVER_ADDR							"118.190.173.234"
-//#define SERVER_PORT							8888
+//#define SERVER_ADDR								"52.80.4.27"
+//#define SERVER_PORT								29100
+#define SERVER_ADDR							"118.190.173.234"
+#define SERVER_PORT							8888
 
 //拍照上传配置
 #define PAIZHAO_COUNT							1 //拍照次数
@@ -31,8 +31,6 @@
 
 #define VOL_REF										3300 //ADC电压基准
 
-#define FLASH_TRACE								//使用flash作为Trace记录器,生产环境请务必注释掉，因为会增加待机功耗，并减少flash读写寿命
-//#define NO_ALARM								//关闭房差报警功能
 
 #define FW_VERSION								0x0000
 

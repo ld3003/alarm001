@@ -136,8 +136,8 @@
             <DriverSelection>4098</DriverSelection>
           </Flash1>
           <bUseTDR>0</bUseTDR>
-          <Flash2>BIN\UL2CM3.DLL</Flash2>
-          <Flash3></Flash3>
+          <Flash2>BIN\CMSIS_AGDI.dll</Flash2>
+          <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
           <pFcarmOut></pFcarmOut>
           <pFcarmGrp></pFcarmGrp>
@@ -613,6 +613,16 @@
               <FileName>bsp.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\bsp.c</FilePath>
+            </File>
+            <File>
+              <FileName>rtc.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\rtc.c</FilePath>
+            </File>
+            <File>
+              <FileName>flash.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\flash.c</FilePath>
             </File>
           </Files>
         </Group>

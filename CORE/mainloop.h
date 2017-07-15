@@ -77,5 +77,6 @@ void mainloop(void);									//³ÌĞòÑ­»·
 
 int push_data(unsigned char *data , int length , unsigned char *outdata , int timeout);
 int push_data_m6312(unsigned char *data , int length , unsigned char *outdata , int timeout);
+int push_data_A6(unsigned char *data , int length , unsigned char *outdata , int timeout);
 
 #endif

@@ -55,7 +55,7 @@ static void test_timer(void *arg)
 int main(void)
 {
 	
-	
+	unsigned short Data2,Data1;
 	
 	SysTick_Config(SystemCoreClock / 100);
 	init_uart1();
@@ -65,6 +65,13 @@ int main(void)
 	init_task();
 	init_mem();
 	init_uart2_buffer();
+	
+	
+	//
+	//Data1 = *(unsigned short *)(0X1FFFF7BA);
+	//printf("DATA1 DADA2 %X %X \r\n",Data1,Data2);
+	
+	
 	
 	//启动一个定时器，进行喂狗操作
 	timerlist[0].func = test_timer;

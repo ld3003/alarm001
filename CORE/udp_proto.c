@@ -105,10 +105,6 @@ int make_0x1091(unsigned char *data , unsigned char *in_data , short in_len)
 		body.dianliang = mdata.voltage;
 		transfer16((unsigned short*)&body.dianliang);
 		
-		#ifdef FLASH_TRACE
-		mem->cfg_data.last_voltage = mdata.voltage;
-		mem->config_write_flag = 1;
-		#endif
 
     body.baoguangzhi = 0;
     transfer16((unsigned short*)&body.baoguangzhi);

@@ -1,6 +1,7 @@
 #ifndef __BSP__
 #define __BSP__
 
+#include "rtc.h"
 
 	
 #define MODEM_POWER_RCC_TYPE	RCC_APB2PeriphClockCmd
@@ -16,6 +17,7 @@ void uart2_putchar(unsigned char data);
 
 void modem_poweron(void);
 void modem_poweroff(void);
+
 
 #endif
 

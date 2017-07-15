@@ -136,3 +136,12 @@ void modem_poweroff(void)
 	GPIO_ResetBits(MODEM_POEWR_GPIO,MODEM_POEWR_PIN);
 	//
 }
+
+void rtc_init(void)
+{
+	//
+}
+void watchdog_init(void)
+{
+	//
+}

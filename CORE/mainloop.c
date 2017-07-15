@@ -243,39 +243,16 @@ void mainloop(void)
 		
 		case MODEM_GPRS_READY:
 		{
-			int ret=0;
-			
-			status_master(mdata.status,60*1000);
-			
-			switch(mdata.modemtype)
+			int ret = 0;
+			ret += at_cmd_wait("AT+CGDCONT=1,\"IP\",\"CMNET\"\r\n",AT_CGDCONT,AT_WAIT,5000);
+			ret += at_cmd_wait("AT+CGACT=1,1\r\n",AT_CGACT,AT_WAIT,5000);
+			ret += at_cmd_wait_str_str("AT+CGATT=1\r\n","OK","OK",5000);
+			//ret += at_cmd_wait_str_str("AT+CIPMUX=1\r\n","OK","OK",1000);
+			if (ret == 0)
 			{
-				case MODEM_TYPE_M6312:
-				{
-					ret += at_cmd_wait("AT+CGDCONT=1,\"IP\",\"CMNET\"\r\n",AT_CGDCONT,AT_WAIT,5000);
-					ret += at_cmd_wait("AT+CGACT=1,1\r\n",AT_CGACT,AT_WAIT,5000);
-					ret += at_cmd_wait("AT+CGATT=1\r\n",AT_CGATT,AT_WAIT,5000);
-					
-					if (ret == 0)
-					{
-						mdata.status = MODEM_GPRS_MIPCALL_SUCCESS;
-						
-						printf("mdata.status = MODEM_GPRS_MIPCALL_SUCCESS;\r\n");
-					}
-					
-					break;
-				}
-				case MODEM_TYPE_G510:
-				{
-					ret = at_cmd_wait("AT+MIPCALL=1,\"cmnet\"\r\n",AT_MIPCALL,0,1000);
-					if (AT_RESP_MIPCALL_OK == ret)
-					{
-						mdata.status = MODEM_GPRS_MIPCALL_SUCCESS;
-						
-					}
-					break;
-				}
-				default:
-					break;
+				mdata.status = MODEM_GPRS_MIPCALL_SUCCESS;
+				printf("mdata.status = MODEM_GPRS_MIPCALL_SUCCESS;\r\n");
+				//for(;;){};
 			}
 			
 			//网络状态已经注册好了，发送拨号命令
@@ -288,59 +265,20 @@ void mainloop(void)
 		{
 			
 			int ret;
+			char *tmpstr = (char*)alloc_mem(__FILE__,__LINE__,1024); 
+			tmpstr[0] = 0x0;
+			ret = at_cmd_wait_str_str("AT+CIPHEAD=1\r\n","OK","OK",100);
+			snprintf(tmpstr,1024,"AT+CIPSTART=\"UDP\",\"%s\",%d\r\n",SERVER_ADDR,SERVER_PORT);
+			//AT+CIPHEAD=
+			ret = at_cmd_wait_str_str(tmpstr,"CONNECT","OK",10000);
+			free_mem(__FILE__,__LINE__,(unsigned char *)tmpstr);
 
-			status_master(mdata.status,60*1000);
-			switch(mdata.modemtype)
+			if(ret == 0)
 			{
-				int i;
-				case MODEM_TYPE_M6312:
-				{
-					
-					char *tmpstr = (char*)alloc_mem(__FILE__,__LINE__,512); 
-					tmpstr[0] = 0x0;
-					snprintf(tmpstr,1024,"AT+IPSTART=0,\"UDP\",\"%s\",%d\r\n",SERVER_ADDR,SERVER_PORT);
-					ret = at_cmd_wait("AT+CMNDI=1\r\n",AT_AT,AT_WAIT,1000);
-					ret = at_cmd_wait("AT+CMMUX=1\r\n",AT_CMMUX,AT_WAIT,1000);
-					ret = at_cmd_wait(tmpstr,AT_IPSTART,AT_WAIT,2000);
-					//ret = at_cmd_wait_str(tmpstr,AT_IPSTART,"BIND",10000); //5s
-					free_mem(__FILE__,__LINE__,(unsigned char *)tmpstr);
-					
-					if(ret == 0)
-					{
-						mdata.status = MODEM_GPRS_MIPOPEN_SUCCESS;
-						
-						printf("mdata.status = MODEM_GPRS_MIPOPEN_SUCCESS;\r\n");
-						//for(;;){};
-					}
-					
-					break;
-					
-				}
-				
-				case MODEM_TYPE_G510:
-				{
-					
-					char *tmpstr;
-					
-					tmpstr = (char*)alloc_mem(__FILE__,__LINE__,512); 
-					tmpstr[0] = 0x0;
-					snprintf(tmpstr,1024,"AT+IPSTART=0,\"UDP\",\"%s\",%d\r\n",SERVER_ADDR,SERVER_PORT);
-					
-					//进行网络连接，连接到远程物联网服务器
-					ret = at_cmd_wait(tmpstr,AT_MIPOPEN,0,1000);
-					free_mem(__FILE__,__LINE__,(unsigned char*)tmpstr);
-					
-					if (AT_RESP_OK == ret)
-					{
-						mdata.status = MODEM_GPRS_MIPOPEN_SUCCESS;
-						
-					} 
-					
-					break;
-					
-				}
+				mdata.status = MODEM_GPRS_MIPOPEN_SUCCESS;
+				printf("mdata.status = MODEM_GPRS_MIPOPEN_SUCCESS;\r\n");
+				//for(;;){};
 			}
-			
 			
 			break;
 		}
@@ -348,9 +286,6 @@ void mainloop(void)
 		{
 			status_master(mdata.status,60*1000);
 			mdata.check_1091_cnt = 0;
-			
-			//如果报警了，那么发送报警
-
 			mdata.status = PROTO_CHECK_1091;
 			break;
 		}
@@ -389,23 +324,6 @@ void mainloop(void)
 				
 			}else{
 				
-				//收到1091之后立即进行休眠时间的计算
-				
-				//mem->cfg_data.LASTTIME_PZ; //上次拍照的时间
-				unsigned int wakeup_paizhao_time;
-				unsigned int wakeup_upload_time;
-
-				
-				//设置下次拍照时间，也就是下次启动的时间
-				wakeup_paizhao_time = __CURRENT_TIME + mdata.time1;
-				//set_next_wakeup_tim(wakeup_paizhao_time);
-				
-				//将下次上传时间保存起来
-				wakeup_upload_time = __CURRENT_TIME + mdata.time2;
-				//__SET_UPLOAD_TIM(wakeup_upload_time);
-				
-				printf("set next wakeup/upload time : %d %d \r\n",wakeup_paizhao_time,wakeup_upload_time);
-				//DEBUG_VALUE2("LAST PAIZHAO TIM",__GET_LAST_PAIZHAOTIM);
 				
 				mdata.status = START_SEND_IMG;
 
@@ -572,17 +490,8 @@ static int push_1091(void)
 	
 	length = make_0x1091(sbuffer,__dd,sizeof(__dd));
 	
-	switch(mdata.modemtype)
-	{
-		case MODEM_TYPE_G510:
-			recvlen = push_data(sbuffer,length,rbuffer,WAIT_UDP_PKG_TIME);
-			break;
-		case MODEM_TYPE_M6312:
-			recvlen = push_data_m6312(sbuffer,length,rbuffer,WAIT_UDP_PKG_TIME);
-			break;
-		default:
-			break;
-	}
+	
+	recvlen = push_data_A6(sbuffer,length,rbuffer,WAIT_UDP_PKG_TIME);
 	
 	if (recvlen >= sizeof(struct UDP_PROTO_HDR))
 	{
@@ -596,61 +505,11 @@ static int push_1091(void)
 		{
 			case 0x9120:
 			{
-//				int i;
 				
-//				unsigned short messageLength = 0;
-//				unsigned short verification = 0;
-//				unsigned short verification2 = 0;
-//				
-//				messageLength = hdr->messageLength;
-//				transfer16((unsigned short*)&messageLength);
-//				
-//				//数据包长度检查
-//			  if (messageLength > recvlen)
-//				{
-//					break;
-//				}
-//				
-//				
-//				
-//				//数据 包合法性检查
-//			
-//				if ((rbuffer[recvlen-2] == 0x0D) && (rbuffer[recvlen-1] == 0x0A))
-//				{
-//					printf("PKG CHECK 0D0A SUCCESS!\r\n");
-//				}else{
-//					printf("PKG CHECK 0D0A ERROR!\r\n");
-//					break;
-//				}
-//				
-//				//进行累加校验
-//				printf("CHECK VERFI:\r\n");
-//				for(i = sizeof(struct UDP_PROTO_HDR);i<messageLength;i++)
-//				{
-//						verification+=((unsigned char*)(rbuffer))[i];
-//						printf(" %02X",rbuffer[i]);
-//				}
-//				printf("\r\n");
-//				
-//				//把服务端送过来的转一下
-//				verification2 = hdr->verification;
-//				transfer16((unsigned short*)&verification2);
-//				
-//				
-//				printf("verification NUM : %d,%d ,%d , %d \r\n",verification2,verification,messageLength,sizeof(struct UDP_PROTO_2091_DATA));
-//				if (verification == verification2)
-//				{
-//					printf("PKG CHECK VERFI NUM SUCCESS!\r\n");
-//				}else{
-//					printf("PKG CHECK VERFI NUM ERROR!\r\n");
-//					break;
-//				}
-			
-			
 				if (check_pkg(rbuffer,recvlen) == 0)
 				{
 					printf("Check PKG ERROR !\r\n");
-					break;
+					//break;
 				}
 			
 				printf("RECV 2091 SUCCESS \r\n");
@@ -670,20 +529,6 @@ static int push_1091(void)
 				DEBUG_VALUE(mdata.time1);
 				DEBUG_VALUE(mdata.time2);
 			
-				#ifdef FLASH_TRACE
-				if (recvlen < 256)
-				{
-					conv_hex_2_string(rbuffer,recvlen,mem->cfg_data.trace);
-				}else{
-					snprintf(mem->cfg_data.trace,sizeof(mem->cfg_data.trace),"RECV 1091 ERR");
-				}
-				
-				mem->cfg_data.TIME1 = mdata.time1;
-				mem->cfg_data.TIME2 = mdata.time2;
-				mem->cfg_data.trace_time = __CURRENT_TIME;
-				
-				mem->config_write_flag = 1;
-				#endif
 			
 				ret1 = 0;
 				break;
@@ -726,17 +571,7 @@ static int push_10A0(void)
 	
 	length = make_0x10A0(sbuffer,1,1,0);
 	
-	switch(mdata.modemtype)
-	{
-		case MODEM_TYPE_G510:
-			recvlen = push_data(sbuffer,length,rbuffer,WAIT_UDP_PKG_TIME);
-			break;
-		case MODEM_TYPE_M6312:
-			recvlen = push_data_m6312(sbuffer,length,rbuffer,WAIT_UDP_PKG_TIME);
-			break;
-		default:
-			break;
-	}
+	recvlen = push_data_A6(sbuffer,length,rbuffer,WAIT_UDP_PKG_TIME);
 	
 	if (recvlen >= sizeof(struct UDP_PROTO_HDR))
 	{
@@ -830,20 +665,10 @@ static int push_1092(unsigned short imgl , unsigned char *imgdata ,unsigned shor
 	sbuffer = alloc_mem(__FILE__,__LINE__,sizeof(struct UDP_PROTO_2092_DATA) + imgl + 16);
 	rbuffer = sbuffer;//alloc_mem(__FILE__,__LINE__,512);
 	
-	DEBUG_VALUE(sbuffer);
+	
 	length = make_0x1092(imgl,imgdata,frq_count,imgtype,img_frq,sbuffer);
 	
-	switch(mdata.modemtype)
-	{
-		case MODEM_TYPE_G510:
-			recvlen = push_data(sbuffer,length,rbuffer,WAIT_UDP_PKG_TIME);
-			break;
-		case MODEM_TYPE_M6312:
-			recvlen = push_data_m6312(sbuffer,length,rbuffer,WAIT_UDP_PKG_TIME);
-			break;
-		default:
-			break;
-	}
+	recvlen = push_data_A6(sbuffer,length,rbuffer,WAIT_UDP_PKG_TIME);
 	
 	if (recvlen > 0)
 	{
@@ -1021,5 +846,77 @@ int push_data_m6312(unsigned char *data , int length , unsigned char *outdata , 
 	
 	return ret;
 }
+
+int push_data_A6(unsigned char *data , int length , unsigned char *outdata , int timeout)
+{
+	extern unsigned char __debug_uart_flag;
+	
+	int ret = 0;
+	int recv_length = 0;
+	
+	char *tmpbuf = (char*)alloc_mem(__FILE__,__LINE__,32);
+
+	snprintf(tmpbuf,32,"AT+CIPSEND=%d\r\n",length);
+	send_at(tmpbuf);
+	
+	free_mem(__FILE__,__LINE__,(unsigned char*)tmpbuf);
+	
+	ret = at_cmd_wait_str_str(0,">",">",500);
+	
+	if (ret != 0)
+	{
+		printf("wait >>>>>>>>>>>>>>> error \r\n");
+		return -1;
+	}
+	
+	send_data(data,length);
+	
+	ret = at_cmd_wait_str_str(0,"SEND","OK",timeout);
+	printf("A6 udp pkg send  %d \r\n",ret);
+	
+	//如果接收缓冲有数据则期待一个接收
+	if ((outdata > 0) && (ret == 0))
+	{
+		start_uart_debug();
+		
+		ret = at_cmd_wait_str_str(0,"+IPD,","+IPD,",5000);
+		utimer_sleep(1000);
+		
+		if (ret == 0)
+		{
+			char *colon,*dot;
+			char tmpbuf[8];
+			char x;
+			int rlen;
+			colon = strstr(uart2_rx_buffer,":");
+			dot = strstr(uart2_rx_buffer,",");
+			
+			for(x=0;x<(colon-dot-1);x++)
+			{
+				tmpbuf[x] = dot[x+1];
+			}
+			tmpbuf[x] = 0x0;
+			
+			
+			
+			sscanf(tmpbuf,"%d",&rlen);
+			memcpy(outdata,colon+1,rlen);
+			
+			ret = rlen;
+
+		}else{
+			ret = 0;
+		}
+		
+		stop_uart_debug();
+
+	}else{
+		ret = -1;
+	}
+	
+	return ret;
+	
+}
+
 
 
