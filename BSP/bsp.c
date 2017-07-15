@@ -145,3 +145,4 @@ void watchdog_init(void)
 {
 	//
 }
+

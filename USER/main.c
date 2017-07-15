@@ -24,11 +24,14 @@
 #include "stm32f10x.h"
 #include "bsp.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include "utimer.h"
 #include "task.h"
 #include "mem.h"
 #include "serialport.h"
 #include "mainloop.h"
+#include "bsp.h"
+#include "config.h"
 
 #ifdef __GNUC__
   /* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
@@ -41,7 +44,7 @@
 
 static void test_timer(void *arg)
 {
-	printf("timer ....\r\n");
+	printf("current RTC time %d \r\n",CURRENT_RTC_TIM);
 }
 
 /*******************************************************************************
@@ -60,6 +63,7 @@ int main(void)
 	SysTick_Config(SystemCoreClock / 100);
 	init_uart1();
 	init_uart2();
+	RTC_Init();
 	
 	init_utimer();
 	init_task();
@@ -70,6 +74,10 @@ int main(void)
 	//
 	//Data1 = *(unsigned short *)(0X1FFFF7BA);
 	//printf("DATA1 DADA2 %X %X \r\n",Data1,Data2);
+	
+	
+	mem = (struct MEM_DATA *)malloc(sizeof(struct MEM_DATA));
+	read_config();
 	
 	
 	

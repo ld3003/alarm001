@@ -1,6 +1,10 @@
 #ifndef __flash_h__
 #define __flash_h__
 
+
+
+
+
 int program_flash(void); //对flash进行编程
 
 typedef unsigned int u32;

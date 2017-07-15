@@ -30,8 +30,7 @@ struct CONFIG_DATA {
 	//
 };
 
-#define WC		((reg_type4)((__IO_REG*)(REG_ADDR))[7])()	
-#define RC		((reg_type4)((__IO_REG*)(REG_ADDR))[6])()
+
 
 
 #endif

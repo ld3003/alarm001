@@ -604,6 +604,16 @@
               <FileType>1</FileType>
               <FilePath>..\CORE\testpoint.c</FilePath>
             </File>
+            <File>
+              <FileName>config.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\CORE\config.c</FilePath>
+            </File>
+            <File>
+              <FileName>cJSON.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\CORE\JSON\cJSON.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -615,14 +625,29 @@
               <FilePath>..\BSP\bsp.c</FilePath>
             </File>
             <File>
-              <FileName>rtc.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>..\BSP\rtc.c</FilePath>
-            </File>
-            <File>
               <FileName>flash.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\flash.c</FilePath>
+            </File>
+            <File>
+              <FileName>RTC_Time.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\RTC_Time.c</FilePath>
+            </File>
+            <File>
+              <FileName>dcmi_ov2640.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\dcmi_ov2640.c</FilePath>
+            </File>
+            <File>
+              <FileName>IOI2C.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\IOI2C.c</FilePath>
+            </File>
+            <File>
+              <FileName>SCCB.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\SCCB.c</FilePath>
             </File>
           </Files>
         </Group>

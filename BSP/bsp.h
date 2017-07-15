@@ -1,7 +1,9 @@
 #ifndef __BSP__
 #define __BSP__
 
-#include "rtc.h"
+#include "RTC_Time.h"
+#include "SCCB.h"
+#include "IOI2C.h"
 
 	
 #define MODEM_POWER_RCC_TYPE	RCC_APB2PeriphClockCmd
