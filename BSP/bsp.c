@@ -137,6 +137,39 @@ void modem_poweroff(void)
 	//
 }
 
+void ov_poweron(void)
+{
+	GPIO_InitTypeDef GPIO_InitStructure;
+
+  MODEM_POWER_RCC_TYPE( OV_POEWR_RCC , ENABLE); 						 
+  /**
+  *  LED1 -> PF6 , LED2 -> PF7 , LED3 -> PF8 , LED4 -> PF9
+  */					 
+  GPIO_InitStructure.GPIO_Pin =  OV_POEWR_PIN;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 
+  GPIO_Init(OV_POEWR_GPIO, &GPIO_InitStructure);
+	
+	GPIO_SetBits(OV_POEWR_GPIO,OV_POEWR_PIN);
+	//
+}
+void ov_poweroff(void)
+{
+	GPIO_InitTypeDef GPIO_InitStructure;
+
+  MODEM_POWER_RCC_TYPE( OV_POEWR_RCC , ENABLE); 						 
+  /**
+  *  LED1 -> PF6 , LED2 -> PF7 , LED3 -> PF8 , LED4 -> PF9
+  */					 
+  GPIO_InitStructure.GPIO_Pin =  OV_POEWR_PIN;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 
+  GPIO_Init(OV_POEWR_GPIO, &GPIO_InitStructure);
+	
+	GPIO_ResetBits(OV_POEWR_GPIO,OV_POEWR_PIN);
+	//
+}
+
 void rtc_init(void)
 {
 	//

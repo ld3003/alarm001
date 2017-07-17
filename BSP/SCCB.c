@@ -34,6 +34,27 @@ static void delay_us(unsigned int us)
 
 #define READ_SDA GPIO_ReadInputDataBit(SDA_PORT, SDA_PORT_PIN)
 
+
+void InitSCCB(void)
+{
+	GPIO_InitTypeDef GPIO_InitStructure;
+	
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB,ENABLE);
+	
+	GPIO_InitStructure.GPIO_Pin =  SDA_PORT_PIN; 
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD; 
+	GPIO_Init(SDA_PORT, &GPIO_InitStructure); 
+	
+	GPIO_InitStructure.GPIO_Pin =  SCL_PORT_PIN; 
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD; 
+	GPIO_Init(SCL_PORT, &GPIO_InitStructure); 
+}
+
+
+
+
 static void SDAPortIN(void)
 {
 	GPIO_InitTypeDef  GPIO_InitStructure;

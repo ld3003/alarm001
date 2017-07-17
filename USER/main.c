@@ -47,13 +47,18 @@ static void test_timer(void *arg)
 	printf("current RTC time %d \r\n",CURRENT_RTC_TIM);
 }
 
+static void test_mma(void)
+{
+	
+}
+
 /*******************************************************************************
 * Function Name  : main
 * Description    : Main program
 * Input          : None
 * Output         : None
 * Return         : None
-* Attention		 : None
+* Attention		   : None
 *******************************************************************************/
 int main(void)
 {
@@ -63,13 +68,30 @@ int main(void)
 	SysTick_Config(SystemCoreClock / 100);
 	init_uart1();
 	init_uart2();
-	RTC_Init();
+	//RTC_Init();
 	
 	init_utimer();
 	init_task();
 	init_mem();
 	init_uart2_buffer();
 	
+	IOI2C_Init();
+
+	
+	init_mma845x();
+	utimer_sleep(5000);
+	Sys_Enter_Standby();
+	for(;;){};
+	
+	JpegBuffer = malloc(1025 * 10);
+	ov_poweron();
+	config_mco();
+	InitSCCB();
+	__test_ov2640();
+	
+	for(;;){readimg();};
+	
+	return 1;
 	
 	//
 	//Data1 = *(unsigned short *)(0X1FFFF7BA);

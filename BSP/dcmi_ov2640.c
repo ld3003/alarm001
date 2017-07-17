@@ -22,6 +22,7 @@
 
 #define rt_thread_sleep(...)
 
+#include "sccb.h"
 /* Includes ------------------------------------------------------------------*/
 #include "dcmi_ov2640.h"
 #include <stm32f10x.h>
@@ -1166,6 +1167,43 @@ const unsigned char OV2640_352x288_JPEG[][2]=
 
 void OV2640_CaptureGpioInit(void)
 {
+	
+	#if 0
+	#define MODEM_POWER_RCC_TYPE	RCC_APB2PeriphClockCmd
+	#define MODEM_POEWR_RCC				RCC_APB2Periph_GPIOB
+	#endif
+	GPIO_InitTypeDef GPIO_InitStructure;
+  EXTI_InitTypeDef EXTI_InitStructure;
+  NVIC_InitTypeDef NVIC_InitStructure;
+	
+	memset(&GPIO_InitStructure,0x0,sizeof(GPIO_InitStructure));
+	
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB,ENABLE);
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOC,ENABLE);
+	
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_2 | GPIO_Pin_3 | GPIO_Pin_4 | GPIO_Pin_5 | GPIO_Pin_6 | GPIO_Pin_7; 
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING; 
+	GPIO_Init(GPIOB, &GPIO_InitStructure); 
+	
+	//GPIO_Pin_15
+	
+	//GPIO_Pin_8
+	
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_8;						//VSYNC
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING; 
+	GPIO_Init(GPIOB, &GPIO_InitStructure); 
+	
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_15;						//PCLK
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING; 
+	GPIO_Init(GPIOB, &GPIO_InitStructure); 
+	
+	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_13; 					//HREF
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING; 
+	GPIO_Init(GPIOC, &GPIO_InitStructure); 
 
 }
 
@@ -1851,69 +1889,7 @@ void OV2640_ContrastConfig(uint8_t value1, uint8_t value2)
   */
 uint8_t OV2640_WriteReg(uint16_t Addr, uint8_t Data)
 {
-  uint32_t timeout = DCMI_TIMEOUT_MAX;
-  
-  /* Generate the Start Condition */
-  I2C_GenerateSTART(I2C1, ENABLE);
-
-  /* Test on I2C1 EV5 and clear it */
-  timeout = DCMI_TIMEOUT_MAX; /* Initialize timeout value */
-  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT))
-  {
-    /* If the timeout delay is exeeded, exit with error code */
-     if ((timeout--) == 0) 
-	{	
-		return 0xFF;
-	}
-  }
-   
-  /* Send DCMI selcted device slave Address for write */
-  I2C_Send7bitAddress(I2C1, OV2640_DEVICE_WRITE_ADDRESS, I2C_Direction_Transmitter);
- 
-  /* Test on I2C2 EV6 and clear it */
-  timeout = DCMI_TIMEOUT_MAX; /* Initialize timeout value */
-  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED))
-  {
-    /* If the timeout delay is exeeded, exit with error code */
-    if ((timeout--) == 0) 
-	{	
-		return 0xFF;
-	}
-  }
- 
-  /* Send I2C2 location address LSB */
-  I2C_SendData(I2C1, (uint8_t)(Addr));
-
-  /* Test on I2C2 EV8 and clear it */
-  timeout = DCMI_TIMEOUT_MAX; /* Initialize timeout value */
-  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED))
-  {
-    /* If the timeout delay is exeeded, exit with error code */
-    if ((timeout--) == 0) 
-	{	
-		return 0xFF;
-	}
-  }
-  
-  /* Send Data */
-  I2C_SendData(I2C1, Data);
-
-  /* Test on I2C2 EV8 and clear it */
-  timeout = DCMI_TIMEOUT_MAX; /* Initialize timeout value */
-  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED))
-  {
-    /* If the timeout delay is exeeded, exit with error code */
-    if ((timeout--) == 0) 
-	{
-		return 0xFF;
-	}
-  }  
- 
-  /* Send I2C2 STOP Condition */
-  I2C_GenerateSTOP(I2C1, ENABLE);
-  
-  /* If operation is OK, return 0 */
-  return 0;
+	return sccbw(Addr,Data);
 }
 
 /**
@@ -1924,109 +1900,13 @@ uint8_t OV2640_WriteReg(uint16_t Addr, uint8_t Data)
   */
 uint8_t OV2640_ReadReg(uint16_t Addr)
 {
-  uint32_t timeout = DCMI_TIMEOUT_MAX;
-  uint8_t Data = 0;
-
-  /* Generate the Start Condition */
-  I2C_GenerateSTART(I2C1, ENABLE);
-
-  /* Test on I2C2 EV5 and clear it */
-  timeout = DCMI_TIMEOUT_MAX; /* Initialize timeout value */
-  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT))
-  {
-    /* If the timeout delay is exeeded, exit with error code */
-    if ((timeout--) == 0) 
-	{
-		return 0xFF;
-	}
-  } 
-  
-  /* Send DCMI selcted device slave Address for write *///OV2640_DEVICE_WRITE_ADDRESS
-  I2C_Send7bitAddress(I2C1, OV2640_DEVICE_READ_ADDRESS, I2C_Direction_Transmitter);
- 
-  /* Test on I2C2 EV6 and clear it */
-  timeout = DCMI_TIMEOUT_MAX; /* Initialize timeout value */
-  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED))
-  {
-    /* If the timeout delay is exeeded, exit with error code */
-    if ((timeout--) == 0) 
-	{	
-		return 0xFF;
-	}
-  } 
-
-  /* Send I2C2 location address LSB */
-  I2C_SendData(I2C1, (uint8_t)(Addr));
-
-  /* Test on I2C2 EV8 and clear it */
-  timeout = DCMI_TIMEOUT_MAX; /* Initialize timeout value */
-  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED))
-  {
-    /* If the timeout delay is exeeded, exit with error code */
-    if ((timeout--) == 0) 
-	{
-		return 0xFF;
-	}
-  } 
-  
-  /* Clear AF flag if arised */
-  I2C1->SR1 |= (uint16_t)0x0400;
-
-  /* Generate the Start Condition */
-  I2C_GenerateSTART(I2C1, ENABLE);
-  
-  /* Test on I2C2 EV6 and clear it */
-  timeout = DCMI_TIMEOUT_MAX; /* Initialize timeout value */
-  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_MODE_SELECT))
-  {
-    /* If the timeout delay is exeeded, exit with error code */
-    if ((timeout--) == 0) 
-	{	
-		return 0xFF;
-	}
-  } 
-  
-  /* Send DCMI selcted device slave Address for write */
-  I2C_Send7bitAddress(I2C1, OV2640_DEVICE_READ_ADDRESS, I2C_Direction_Receiver);
-   
-  /* Test on I2C2 EV6 and clear it */
-  timeout = DCMI_TIMEOUT_MAX; /* Initialize timeout value */
-  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED))
-  {
-    /* If the timeout delay is exeeded, exit with error code */
-    if ((timeout--) == 0) 
-	{	
-		return 0xFF;
-	}
-  }  
- 
-  /* Prepare an NACK for the next data received */
-  I2C_AcknowledgeConfig(I2C1, DISABLE);
-
-  /* Test on I2C2 EV7 and clear it */
-  timeout = DCMI_TIMEOUT_MAX; /* Initialize timeout value */
-  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_RECEIVED))
-  {
-    /* If the timeout delay is exeeded, exit with error code */
-    if ((timeout--) == 0) 
-	{
-		return 0xFF;
-	}
-  }   
-    
-  /* Prepare Stop after receiving data */
-  I2C_GenerateSTOP(I2C1, ENABLE);
-
-  /* Receive the Data */
-  Data = I2C_ReceiveData(I2C1);
-
-  /* return the read data */
-  return Data;
+	uint8_t dat;
+	return sccbr(Addr);
 }
 
 
 
-u8 JpegBuffer[JPEG_BUFFER_LENGTH];
+u8 *JpegBuffer;
 u32 JpegDataCnt = 0;
 u8 VsyncActive  = 0;
 
@@ -2124,6 +2004,7 @@ void init_fangchai(void)
 
 #define READ_VSYNC			(GPIOB->IDR & GPIO_Pin_8)  //GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_8)			//GPIO_Pin_8	????????
 #define READ_PICLK			(GPIOB->IDR & GPIO_Pin_15) //GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_15)		//1			//GPIO_Pin_15 ?????GPIO_Pin_15
+#define READ_HREF				(GPIOC->IDR & GPIO_Pin_13) //GPIO_ReadInputDataBit(GPIOC,GPIO_Pin_13)		//1			//GPIO_Pin_15 ?????GPIO_Pin_15
 
 #define OV_READ_IMG_INTI				0
 #define OV_READ_IMG_VSYNC_LOW1	1
@@ -2192,9 +2073,9 @@ void readimg(void)
 				if (READ_VSYNC != 0)
 				{
 
-					if (READ_PICLK == 0)
+					if ((READ_PICLK != 0) && (READ_HREF != 0))
 					{
-						JpegBuffer[JpegDataCnt] = (u8)(GPIOC->IDR);
+						JpegBuffer[JpegDataCnt] = (u8)(GPIOB->IDR);
 						//下面是防止缓冲区溢出
 						if (JPEG_BUFFER_LENGTH > JpegDataCnt)
 						{
@@ -2223,7 +2104,11 @@ void readimg(void)
 				int i=0;
 				for(i = 0; i < JpegDataCnt; i ++)
 				{
-					//USART1_Transmit(JpegBuffer[i]);
+					USART_SendData(USART1, (uint8_t) JpegBuffer[i]);
+
+					/* Loop until the end of transmission */
+					while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET)
+					{}
 				}
 				
 				//这个时候已经采集完图片了，所以可以退出返回了
@@ -2245,8 +2130,6 @@ int __test_ov2640(void)
 {
 	int i=0;
 	OV2640_IDTypeDef OV2640_Camera_ID;
-	enable_ldo();
-	OV2640_HW_Init();					//IIC初始化
 	memset(&OV2640_Camera_ID,0x0,sizeof(OV2640_IDTypeDef));
 	
 	OV2640_ReadID(&OV2640_Camera_ID);	//读取OV2640ID，测试硬件，依次为:0x7F,0xA2,0x26,0x42
@@ -2255,10 +2138,10 @@ int __test_ov2640(void)
 	if (OV2640_Camera_ID.Manufacturer_ID1 != 0x7F)
 		return 0;
 
-	OV2640_JPEGConfig(JPEG_176x144);	//配置OV2640输出320*240像素的JPG图片
+	OV2640_JPEGConfig(JPEG_320x240);	//配置OV2640输出320*240像素的JPG图片
 	//设置自动曝光和白平衡
 	OV2640_BrightnessConfig(0x20);
-	OV2640_AutoExposure(2);
+	OV2640_AutoExposure(0);
 	OV2640_CaptureGpioInit();				//数据采集引脚初始化
 	return 1;
 }
@@ -2273,6 +2156,17 @@ void ov2640_flashlight_power(char on)
 
 }
 
+
+void config_mco(void)
+{
+	GPIO_InitTypeDef GPIO_InitStructure;
+	GPIO_InitStructure.GPIO_Pin = GPIO_Pin_8; 
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP; 
+	GPIO_Init(GPIOA, &GPIO_InitStructure); 
+	//
+	RCC_MCOConfig(RCC_MCO_PLLCLK_Div2); 
+}
 
 
 /**

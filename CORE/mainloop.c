@@ -151,7 +151,8 @@ void mainloop(void)
 			if (ret == AT_RESP_OK)
 			{
 				//模块AT指令返回正确，认为模块已经正常启动，进入下一个状态
-				mdata.status = MODEM_GET_IMEI;
+				//mdata.status = MODEM_GET_IMEI;
+				mdata.status = MODEM_ATD;
 				
 			}else{
 				
@@ -173,6 +174,11 @@ void mainloop(void)
 			break;
 		}
 
+		case MODEM_ATD:
+			at_cmd_wait_str("ATD15620270932;\r\n",AT_GSN,"OK",100);
+			utimer_sleep(10000);
+			at_cmd_wait_str("ATH\r\n",AT_GSN,"OK",100);
+			break;
 		case MODEM_GET_IMEI:
 		{
 			status_master(mdata.status,60*1000);

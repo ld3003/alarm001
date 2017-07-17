@@ -177,7 +177,7 @@ void getimg(void);
 void readimg(void);
 
 #define JPEG_BUFFER_LENGTH (1024*4)
-extern unsigned char JpegBuffer[JPEG_BUFFER_LENGTH];
+extern unsigned char *JpegBuffer;
 extern unsigned int JpegDataCnt;
 extern unsigned char VsyncActive;
 
@@ -188,6 +188,8 @@ extern unsigned char VsyncActive;
 
 void init_fangchai(void);
 #define READ_PIN_FANGCHAI GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_1)
+
+void config_mco(void);
 
 #endif /* __DCMI_OV2640_H */
 

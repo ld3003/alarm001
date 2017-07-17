@@ -649,6 +649,11 @@
               <FileType>1</FileType>
               <FilePath>..\BSP\SCCB.c</FilePath>
             </File>
+            <File>
+              <FileName>standby.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\standby.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

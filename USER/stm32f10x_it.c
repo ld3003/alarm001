@@ -56,13 +56,6 @@ void NMI_Handler(void)
   */
 void HardFault_Handler(void)
 {
-	uart2_putchar('H');
-	uart2_putchar('H');
-	uart2_putchar('H');
-	uart2_putchar('H');
-	uart2_putchar('H');
-	uart2_putchar('H');
-	uart2_putchar('H');
   /* Go to infinite loop when Hard Fault exception occurs */
   while (1)
   {
