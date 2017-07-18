@@ -6,6 +6,7 @@
 #include "IOI2C.h"
 #include "standby.h"
 #include "dcmi_ov2640.h"
+#include "mma845x.h"
 
 	
 #define MODEM_POWER_RCC_TYPE	RCC_APB2PeriphClockCmd

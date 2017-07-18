@@ -135,8 +135,8 @@
             <Capability>1</Capability>
             <DriverSelection>4098</DriverSelection>
           </Flash1>
-          <bUseTDR>0</bUseTDR>
-          <Flash2>BIN\CMSIS_AGDI.dll</Flash2>
+          <bUseTDR>1</bUseTDR>
+          <Flash2>BIN\UL2CM3.DLL</Flash2>
           <Flash3>"" ()</Flash3>
           <Flash4></Flash4>
           <pFcarmOut></pFcarmOut>
@@ -653,6 +653,11 @@
               <FileName>standby.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\BSP\standby.c</FilePath>
+            </File>
+            <File>
+              <FileName>mma845x.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\BSP\mma845x.c</FilePath>
             </File>
           </Files>
         </Group>

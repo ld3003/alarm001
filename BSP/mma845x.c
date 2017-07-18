@@ -59,7 +59,7 @@ static void read_i2c_dev(u8 devid , u8 reg , u8 value , u8 num , u8 vs)
 /**
 	???MMA8452??
 */
-void init_mma845x(void)
+char init_mma845x(void)
 {
 
 	unsigned char xxxvalue;
@@ -68,18 +68,11 @@ void init_mma845x(void)
 	
 	IOI2C_Init();
 	
-	reread:
 	write_i2c_dev(m_define_device_address_write, 
 			m_define_ctl_reg_1, 
 			m_define_value_ctl_reg_1_standby, 
 			m_define_value_how_much_byte_1, 
 			m_define_value_setting);
-
-
-	IICreadBytes(m_define_device_address_write,m_define_ctl_reg_1,1,&xxxvalue);
-	printf("XXXXXXXXXX %d \r\n",xxxvalue);
-
-	
 
 
 	write_i2c_dev(m_define_device_address_write,
@@ -163,9 +156,15 @@ void init_mma845x(void)
 			
 			
 	if (I2C_Erorr_Count == 0)
+	{
 		printf("Init MMA8452Q SUCCESS ! \r\n");
+		return 1;
+	}
 	else
+	{
 		printf("Init MMA8452Q Failed ! \r\n");
+		return 0;
+	}
 	
 	
 
