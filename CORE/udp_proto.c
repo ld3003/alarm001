@@ -8,6 +8,7 @@
 #include "setting.h"
 #include "mainloop.h"
 #include <string.h>
+#include "bsp.h"
 
 #define DEVICE_TYPE_VAL 1
 
@@ -16,8 +17,8 @@ static unsigned short message_id = 0;
 void update_message_id(void)
 {
 	//如果发现MESSAGE == 0 那么将message ID 赋值为 重启次数 保证MessageID 每次都不一样
-	if (message_id == 0)
-		message_id = 1;
+	if (message_id == GET_SYSTEM_COUNTER)
+		message_id = GET_SYSTEM_COUNTER;
 	message_id++;
 }
 
@@ -106,16 +107,7 @@ int make_0x1091(unsigned char *data , unsigned char *in_data , short in_len)
 		transfer16((unsigned short*)&body.dianliang);
 		
 
-    body.baoguangzhi = 0;
-    transfer16((unsigned short*)&body.baoguangzhi);
-		
-    body.shanguangdeng = 0;
-		transfer16((unsigned short*)&body.shanguangdeng);
-		
-		body.heibai_caise = 0;
 		body.signal_val = gsm_signal;
-		body.shouci = 0;
-		body.shexiangtou_gongzuo = 0;
 		body.device_type = DEVICE_TYPE_VAL;
 		transfer16(&body.device_type);
 		
@@ -276,6 +268,43 @@ int make_0x10A0(unsigned char *data , c_u16 alarmtype , c_u32 alarmnum , c_u32 a
 }
 
 
+int make_0x10B0(unsigned char *data , char *json)
+{
+	int i;
+	unsigned short verification = 0;
+	struct UDP_PROTO_HDR *hdr;
+	hdr = (struct UDP_PROTO_HDR *)data;
+	
+	hdr->cmdcode = 0x10b0;
+	transfer16((unsigned short*)&hdr->cmdcode);
+	
+	((unsigned char*)(&hdr->fw_ver))[0] = MAJOR_VERSION_NUMBER;
+	((unsigned char*)(&hdr->fw_ver))[1] = MINOR_VERSION_NUMBER;
+	
+	hdr->pwd_ver = 0;//0x0101;
+	transfer16((unsigned short*)&hdr->pwd_ver);
+	
+	hdr->messageLength = sizeof(struct UDP_PROTO_HDR) + strlen(json) +1; //0x27;
+  transfer16((unsigned short*)&hdr->messageLength);
+	
+	
+	for(i = 0; i<strlen(json); i++)
+	{
+			verification+=((unsigned char*)(json))[i];
+	}
+	
+	hdr->verification = verification;
+	transfer16((unsigned short*)&hdr->verification);
+	
+	
+	//memcpy(data,(unsigned char*)&body,sizeof(body));
+	memcpy(data+sizeof(struct UDP_PROTO_HDR),json,strlen(json)+1);
+		
+	return sizeof(struct UDP_PROTO_HDR) + strlen(json) + 1;
+
+}
+
+
 unsigned char check_pkg(unsigned char *buf , int buflen)
 {
 	
@@ -296,13 +325,13 @@ unsigned char check_pkg(unsigned char *buf , int buflen)
 		return 0;
 	
 	
-	if ((buf[buflen-2] == 0x0D) && (buf[buflen-1] == 0x0A))
-	{
-		printf("PKG CHECK 0D0A SUCCESS!\r\n");
-	}else{
-		printf("PKG CHECK 0D0A ERROR!\r\n");
-		return 0;
-	}
+//	if ((buf[buflen-2] == 0x0D) && (buf[buflen-1] == 0x0A))
+//	{
+//		printf("PKG CHECK 0D0A SUCCESS!\r\n");
+//	}else{
+//		printf("PKG CHECK 0D0A ERROR!\r\n");
+//		return 0;
+//	}
 	
 	//进行累加校验
 	printf("CHECK VERFI:\r\n");

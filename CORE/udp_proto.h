@@ -64,17 +64,8 @@ struct UDP_PROTO_HDR {
 struct UDP_PROTO_1091 {
     struct UDP_PROTO_HDR hdr;
     c_u16 dianliang;
-    c_u16 baoguangzhi;
-    c_u16 shanguangdeng;
-    c_u8 heibai_caise;
-    c_u8 resolution;		//分辨率
     c_u8 signal_val;
-	
-		#ifdef VER_2_1_6_a
-		c_u8 shouci;
-		c_u8 shexiangtou_gongzuo;
 		c_u16 device_type;
-		#endif
     //
 };
 
@@ -137,6 +128,7 @@ extern struct UPLOADPIC_DATA uploadpic_data;
 int make_0x1091(unsigned char *data , unsigned char *in_data , short in_len);
 int make_0x1092(unsigned short imgl , unsigned char *imgdata ,unsigned short frq_count ,unsigned char imgtype , unsigned short img_frq , unsigned char *data);
 int make_0x10A0(unsigned char *data , c_u16 alarmtype , c_u32 alarmnum , c_u32 alarmtime);
+int make_0x10B0(unsigned char *data , char *json);
 unsigned char check_pkg(unsigned char *buf , int buflen);
 void update_message_id(void); //更新messageID，每次发送的数据包的message不一致，但是图片包，一幅图片拆分的包不计算在内
 

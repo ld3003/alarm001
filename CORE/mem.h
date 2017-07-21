@@ -13,7 +13,6 @@ struct MEM_DATA {
 	
 	unsigned short adccache[10];
 	
-	
 	//config:
 	unsigned char config_write_flag;
 	struct CONFIG_DATA cfg_data;
@@ -32,3 +31,6 @@ extern struct MEM_DATA *mem;
 
 
 #endif
+
+
+

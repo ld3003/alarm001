@@ -21,17 +21,8 @@
 *********************************************************************************************************/
 
 /* Includes ------------------------------------------------------------------*/
-#include "stm32f10x.h"
-#include "bsp.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include "utimer.h"
-#include "task.h"
-#include "mem.h"
-#include "serialport.h"
-#include "mainloop.h"
-#include "bsp.h"
-#include "config.h"
+
+#include "main.h"
 
 #ifdef __GNUC__
   /* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
@@ -42,15 +33,13 @@
 #endif /* __GNUC__ */
 
 
+static int gotoalarm(void);
 static void test_timer(void *arg)
 {
 	printf("current RTC time %d \r\n",CURRENT_RTC_TIM);
 }
 
-static void test_mma(void)
-{
-	
-}
+
 
 /*******************************************************************************
 * Function Name  : main
@@ -63,39 +52,106 @@ static void test_mma(void)
 int main(void)
 {
 	
-	unsigned short Data2,Data1;
 	
 	SysTick_Config(SystemCoreClock / 100);
 	init_uart1();
 	init_uart2();
-	//RTC_Init();
-	
+	RTC_Init();
+	WKUP_Pin_Init();
+		
 	init_utimer();
 	init_task();
 	init_mem();
+	
+	SET_SYSTEM_COUNTER;
+	
+//	printf("start delay ___ \r\n");
+//	utimer_sleep(5000);
+//	printf("end delay ___ \r\n");
+//	RTC_SetAlarm(RTC_GetCounter() + 5);
+//	RTC_WaitForLastTask();
+//	Sys_Enter_Standby();
+	
+	
+//	gotoalarm();
+		
+
+	for(;;)
+	{
+		switch(GET_SYSTEM_STATUS)
+		{
+			case SYSTEM_STATUS_INIT:
+				IOI2C_Init();
+				init_mma845x();
+				SET_SYSTEM_STATUS(SYSTEM_STATUS_SLEEP);
+				break;
+			case SYSTEM_STATUS_SLEEP:
+			
+				//检测是否有入侵报警
+				if (GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0))
+				{
+					SET_SYSTEM_STATUS(SYSTEM_STATUS_RUN);
+					break;
+				}
+			
+				printf("sleep...\r\n");
+				Sys_Enter_Standby();
+				break;
+			
+			case SYSTEM_STATUS_RUN:
+				printf("run...\r\n");
+			
+				//如果当前的RTC小于60那么不进入报警规则
+				if (CURRENT_RTC_TIM < 60)
+				{
+					//
+					printf("CURRENT_RTC_TIM < 60\r\n");
+					SET_SYSTEM_STATUS(SYSTEM_STATUS_SLEEP);
+					Sys_Enter_Standby();
+					break;
+				}
+				
+				//如果两次报警间隔不小于 120 则不进入报警
+				if ((CURRENT_RTC_TIM - GET_LAST_ALARM_TIME) < 120)
+				{
+					printf("(CURRENT_RTC_TIM - GET_LAST_ALARM_TIME) < 120 [%d][%d]\r\n",CURRENT_RTC_TIM,GET_LAST_ALARM_TIME);
+					SET_SYSTEM_STATUS(SYSTEM_STATUS_SLEEP);
+					Sys_Enter_Standby();
+					break;
+				}
+				
+				gotoalarm();
+				break;
+		}
+	}
+	
+	return 0;
+}
+
+
+static int gotoalarm(void)
+{
 	init_uart2_buffer();
 	
-	IOI2C_Init();
-
-	
-	init_mma845x();
-	utimer_sleep(5000);
-	Sys_Enter_Standby();
-	for(;;){};
-	
-	JpegBuffer = malloc(1025 * 10);
-	ov_poweron();
-	config_mco();
-	InitSCCB();
-	__test_ov2640();
-	
-	for(;;){readimg();};
-	
-	return 1;
+	//	utimer_sleep(5000);
+	//	Sys_Enter_Standby();
+	//	for(;;){};
+		
+	//	JpegBuffer = malloc(JPEG_BUFFER_LENGTH);
+	//	ov_poweron();
+	//	config_mco();
+	//	InitSCCB();
+	//	init_ov2640();
+	//	for(;;){readimg();utimer_sleep(2000);};
+	//	free(JpegBuffer);
+	//	return 1;
 	
 	//
 	//Data1 = *(unsigned short *)(0X1FFFF7BA);
 	//printf("DATA1 DADA2 %X %X \r\n",Data1,Data2);
+	
+	//Adc_Init();
+	//printf("XXXX %d \r\n",Get_val());
 	
 	
 	mem = (struct MEM_DATA *)malloc(sizeof(struct MEM_DATA));
@@ -117,14 +173,9 @@ int main(void)
 		mainloop();
 	}
 	
-	while (1){
-		/* Loop until RXNE = 1 */
-				while (USART_GetFlagStatus(USART1, USART_FLAG_RXNE) == RESET);
-		USART_SendData(USART1,USART_ReceiveData(USART1));
-	}
+	return 0;
+	
 }
-
-
 
 
 

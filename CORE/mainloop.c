@@ -14,6 +14,8 @@
 #include "mem.h"
 #include "setting.h"
 #include "testpoint.h"
+#include "bsp.h"
+#include "main.h"
 
 #define MAINLOOP_STATUS_DELAY __time_100ms_cnt[TIMER_100MS_MAINLOOP_DELAY]
 
@@ -45,7 +47,8 @@ static void status_master(unsigned char status , unsigned int time)
 			printf("*               STATUS  ERROR!                       *\r\n");
 			printf("******************************************************\r\n");
 			//当作一个看门狗来处理把
-			sys_shutdown();
+			SET_SYSTEM_STATUS(SYSTEM_STATUS_SLEEP);
+			Sys_Enter_Standby();
 			//
 		}else{
 			//TIMER_100MS_PRINTF_DELAY
@@ -151,8 +154,8 @@ void mainloop(void)
 			if (ret == AT_RESP_OK)
 			{
 				//模块AT指令返回正确，认为模块已经正常启动，进入下一个状态
-				//mdata.status = MODEM_GET_IMEI;
-				mdata.status = MODEM_ATD;
+				mdata.status = MODEM_GET_IMEI;
+				//mdata.status = MODEM_ATD;
 				
 			}else{
 				
@@ -295,6 +298,7 @@ void mainloop(void)
 			mdata.status = PROTO_CHECK_1091;
 			break;
 		}
+		
 		case PROTO_SEND_ALARM:
 			#if 1
 			status_master(mdata.status,10*60*1000);
@@ -304,12 +308,17 @@ void mainloop(void)
 				mem->send_10a0_cnt ++ ;
 				if (mem->send_10a0_cnt > 3)
 				{
-					sys_shutdown();		
+					SET_SYSTEM_STATUS(SYSTEM_STATUS_SLEEP);
+					Sys_Enter_Standby();
 				}
 				
 			}else{
-				//发送成功，进入休眠
-				sys_shutdown();
+				
+				//
+				SET_LAST_ALARM_TIME;
+				SET_SYSTEM_STATUS(SYSTEM_STATUS_SLEEP);
+				Sys_Enter_Standby();
+				
 				
 			}
 			#endif
@@ -326,12 +335,16 @@ void mainloop(void)
 				{
 					mdata.status = PROTO_SEND_IMG_ERROR;
 					
+					SET_SYSTEM_STATUS(SYSTEM_STATUS_SLEEP);
+					Sys_Enter_Standby();
+					
 				}
 				
 			}else{
 				
 				
-				mdata.status = START_SEND_IMG;
+				
+				mdata.status = PROTO_SEND_ALARM;
 
 				
 			}
@@ -511,31 +524,6 @@ static int push_1091(void)
 		{
 			case 0x9120:
 			{
-				
-				if (check_pkg(rbuffer,recvlen) == 0)
-				{
-					printf("Check PKG ERROR !\r\n");
-					//break;
-				}
-			
-				printf("RECV 2091 SUCCESS \r\n");
-				printf("TIME1 : %02X %02X %02X %02X \r\n",data2091p->time1[0],data2091p->time1[1],data2091p->time1[2],data2091p->time1[3]);
-				printf("TIME2 : %02X %02X %02X %02X \r\n",data2091p->time2[0],data2091p->time2[1],data2091p->time2[2],data2091p->time2[3]);	
-			
-				mdata.time1 =  data2091p->time1[3] + (data2091p->time1[2]*256) + (data2091p->time1[1]*256*256) + (data2091p->time1[0]*256*256*256);
-				mdata.time2 =  data2091p->time2[3] + (data2091p->time2[2]*256) + (data2091p->time2[1]*256*256) + (data2091p->time2[0]*256*256*256);
-			
-				memcpy((unsigned char*)(&mdata.time1),data2091p->time1,4);
-				memcpy((unsigned char*)(&mdata.time2),data2091p->time2,4);
-			
-				transfer32(&mdata.time1);
-				transfer32(&mdata.time2);
-			
-			
-				DEBUG_VALUE(mdata.time1);
-				DEBUG_VALUE(mdata.time2);
-			
-			
 				ret1 = 0;
 				break;
 			}
@@ -600,6 +588,58 @@ static int push_10A0(void)
 		//
 	}else{
 		printf("RECV 2091 ERROR \r\n");
+	}
+	
+	free_mem(__FILE__,__LINE__,(unsigned char*)sbuffer);
+	//free_mem((unsigned char*)rbuffer);
+	
+	return ret1;
+	//
+}
+
+static int push_10B0(char *json)
+{
+	//int make_0x10B0(unsigned char *data , char *json)
+	
+	struct UDP_PROTO_HDR *hdr;
+	
+	
+	int ret;
+	int ret1 = -1;
+	int length,recvlen;
+	
+	
+	unsigned char *sbuffer,*rbuffer;
+	char *hexbuffer;
+	char *atbuffer;
+	
+	sbuffer = alloc_mem(__FILE__,__LINE__,512);
+	rbuffer = sbuffer;//alloc_mem(__FILE__,__LINE__,1024);
+	
+	length = make_0x10B0(sbuffer,json);
+	
+	recvlen = push_data_A6(sbuffer,length,rbuffer,WAIT_UDP_PKG_TIME);
+	
+	if (recvlen >= sizeof(struct UDP_PROTO_HDR))
+	{
+		
+	  hdr = (struct UDP_PROTO_HDR *)rbuffer;
+
+		switch(hdr->cmdcode)
+		{
+			case 0xB020:
+				printf("RECV 20A0 SUCCESS \r\n");
+				ret1 = 0;
+				break;
+			case 0x00:
+				break;
+			default:
+				break;
+			
+		}
+		//
+	}else{
+		printf("RECV 20B0 ERROR \r\n");
 	}
 	
 	free_mem(__FILE__,__LINE__,(unsigned char*)sbuffer);
@@ -858,7 +898,7 @@ int push_data_A6(unsigned char *data , int length , unsigned char *outdata , int
 	extern unsigned char __debug_uart_flag;
 	
 	int ret = 0;
-	int recv_length = 0;
+//	int recv_length = 0;
 	
 	char *tmpbuf = (char*)alloc_mem(__FILE__,__LINE__,32);
 
@@ -884,38 +924,54 @@ int push_data_A6(unsigned char *data , int length , unsigned char *outdata , int
 	if ((outdata > 0) && (ret == 0))
 	{
 		start_uart_debug();
-		
 		ret = at_cmd_wait_str_str(0,"+IPD,","+IPD,",5000);
 		utimer_sleep(1000);
+		stop_uart_debug();
 		
 		if (ret == 0)
 		{
+			
 			char *colon,*dot;
 			char tmpbuf[8];
 			char x;
 			int rlen;
+			
+			DEBUG_VALUE(0);
+			
 			colon = strstr(uart2_rx_buffer,":");
 			dot = strstr(uart2_rx_buffer,",");
 			
-			for(x=0;x<(colon-dot-1);x++)
+			printf("colon %02x dot %02x \r\n",(unsigned int)colon,(unsigned int)dot);
+			
+			if (colon <= dot)
 			{
-				tmpbuf[x] = dot[x+1];
+				ret = 0;
 			}
-			tmpbuf[x] = 0x0;
+			else
+			{
 			
-			
-			
-			sscanf(tmpbuf,"%d",&rlen);
-			memcpy(outdata,colon+1,rlen);
-			
-			ret = rlen;
+				DEBUG_VALUE(0);
+				
+				for(x=0;x<(colon-dot-1);x++)
+				{
+					tmpbuf[x] = dot[x+1];
+				}
+				tmpbuf[x] = 0x0;
+				
+				DEBUG_VALUE(0);
+				
+				sscanf(tmpbuf,"%d",&rlen);
+				memcpy(outdata,colon+1,rlen);
+				
+				DEBUG_VALUE(0);
+				
+				ret = rlen;
+			}
 
 		}else{
 			ret = 0;
 		}
-		
-		stop_uart_debug();
-
+		DEBUG_VALUE(0);
 	}else{
 		ret = -1;
 	}

@@ -1,6 +1,8 @@
 #include <stm32f10x.h>
 
 #include "standby.h"
+#include "bsp.h"
+#include "main.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -44,7 +46,11 @@ void Sys_Enter_Standby(void)
 
 
 void EXTI0_IRQHandler(void)
-{ 		    		    				     		    
+{
+	if (GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0))
+	{
+		SET_SYSTEM_STATUS(SYSTEM_STATUS_RUN);	
+	}
 	EXTI_ClearITPendingBit(EXTI_Line0);
 }
 

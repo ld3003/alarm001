@@ -4,3 +4,12 @@
 char init_mma845x(void);
 
 #endif
+
+
+
+
+
+
+
+
+

@@ -23,11 +23,10 @@
 #define rt_thread_sleep(...)
 
 #include "sccb.h"
-/* Includes ------------------------------------------------------------------*/
 #include "dcmi_ov2640.h"
 #include <stm32f10x.h>
 #include "dcmi_ov2640.h"
-#include <stm32f10x_i2c.h>
+
 /** @addtogroup STM32F4xx_StdPeriph_Examples
   * @{
   */
@@ -1910,18 +1909,6 @@ u8 *JpegBuffer;
 u32 JpegDataCnt = 0;
 u8 VsyncActive  = 0;
 
-
-void USART1_Transmit(u8 ch_data);
-void __put_uart1_buffer(unsigned char *buffer , int length)
-{
-	int i=0;
-	for(i=0;i<length;i++)
-	{
-		//USART1_Transmit(buffer[i]);
-	}
-	
-}
-
 int d8find(unsigned char *input , int len)
 {
 	int i=0;
@@ -1986,19 +1973,6 @@ void disable_ldo(void)
 	
 }
 
-void init_fangchai(void)
-{
-	
-	GPIO_InitTypeDef GPIO_InitStructure;
-  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
-	
-	GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_1;
-	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-	GPIO_Init(GPIOB, &GPIO_InitStructure);
-	
-	//
-}
 
 #define READ_PIN_FANGCHAI GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_1)
 
@@ -2126,7 +2100,7 @@ void readimg(void)
 	return;
 }
 
-int __test_ov2640(void)
+int init_ov2640(void)
 {
 	int i=0;
 	OV2640_IDTypeDef OV2640_Camera_ID;
@@ -2146,17 +2120,6 @@ int __test_ov2640(void)
 	return 1;
 }
 
-void ov2640_power_on(char on)
-{
-
-}
-
-void ov2640_flashlight_power(char on)
-{
-
-}
-
-
 void config_mco(void)
 {
 	GPIO_InitTypeDef GPIO_InitStructure;
@@ -2166,6 +2129,58 @@ void config_mco(void)
 	GPIO_Init(GPIOA, &GPIO_InitStructure); 
 	//
 	RCC_MCOConfig(RCC_MCO_PLLCLK_Div2); 
+}
+
+#include "flash.h"
+void save_to_flash(int index , unsigned char *buffer , int buflen , unsigned int time)
+{
+	//数据结构:
+	//0xFA,0XFB,0XFC,0XFD,[LENGTH],[DATA]
+	
+	extern unsigned int ___paizhaoshijian;
+	//
+	unsigned int program_address;
+	unsigned char hdr[] = {0xFA,0xFB,0xFC,0xFD};
+	
+	if (buflen > (IMG_CACHE_SIZE - 8))
+	{
+		//DEBUG_ERROR(buflen);
+		return;
+	}
+	
+	/**
+	FLASH_ProgramStart(CONFIG_DATA_ADDR,CONFIG_DATA_SIZE);
+	FLASH_AppendBuffer(config_raw_data,CONFNIG_RAW_DATA_SIZE);
+	FLASH_AppendBuffer((unsigned char*)json,strlen(json));
+	FLASH_AppendEnd();
+	FLASH_ProgramDone();
+	*/
+	
+	switch(index)
+	{
+		case 0:
+			program_address = IMG_CACHE_ADDR_0;
+			break;
+		case 1:
+			program_address = IMG_CACHE_ADDR_1;
+			break;
+		case 2:
+			program_address = IMG_CACHE_ADDR_2;
+			break;
+		default:
+			break;
+			
+	}
+	
+	FLASH_ProgramStart(program_address,IMG_CACHE_SIZE);
+	
+	FLASH_AppendBuffer(hdr,sizeof(hdr)); // paizhaotime
+	FLASH_AppendBuffer((unsigned char*)(&buflen),sizeof(buflen));
+	FLASH_AppendBuffer((unsigned char*)(&time),sizeof(time));
+	FLASH_AppendBuffer(buffer,buflen);
+	FLASH_AppendEnd();
+	FLASH_ProgramDone();
+	
 }
 
 

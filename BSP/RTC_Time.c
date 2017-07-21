@@ -389,73 +389,150 @@ void Time_Regulate(void)
 * Return         : None
 * Attention		 : None	
 *******************************************************************************/
-void RTC_Init(void)
-{
-
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_BKP | RCC_APB1Periph_PWR , ENABLE);
-	PWR_BackupAccessCmd(ENABLE);//???????,??????????
 
 
-	if(BKP_ReadBackupRegister(BKP_DR1) != 0xAA00)//Vbat?VDD??
-	{
-		BKP_DeInit();  //??????,?BKP?????
-		RCC_LSICmd(ENABLE);//????????LSI
-		while(RCC_GetFlagStatus(RCC_FLAG_LSIRDY) == 0) 
-		{
-		}
-
-
-		RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI);
-		//RCC_RTCCLKConfig(RCC_RTCCLKSource_LSE);//????????LSE?RTC???
-
-		RCC_RTCCLKCmd(ENABLE);//????RTC??
-
-
-		RTC_WaitForLastTask();//??????RTC????(??,?????RTC?????,????????????)
-		RTC_WaitForSynchro();//???APB1???,???RTC???
-
-
-		///////////////// ////(???????)////////////////////////////
-
-		RTC_EnterConfigMode();//??RTC??
-		RTC_WaitForLastTask();//??????RTC????
-
-
-		RTC_SetPrescaler(40000);//????1HZ
-		RTC_WaitForLastTask();//??????RTC????
-
-		RTC_ITConfig(RTC_IT_ALR , DISABLE);//??????.  ???RTC_IT_SEC
-
-		RTC_WaitForLastTask();//??????RTC????
-
-
-
-		RTC_WaitForLastTask();//??????RTC????
-
-		RTC_ExitConfigMode(); //??RTC????
-
-
-		BKP_WriteBackupRegister(BKP_DR1, 0xAA00);//???????????
-
-	}
-
-	else//????????????
-	{
-
-		RTC_WaitForSynchro();//???APB1???,???RTC???
-
-		RTC_EnterConfigMode();//??RTC??
-
-		RTC_ITConfig(RTC_IT_ALR, DISABLE);
-
-		RTC_WaitForLastTask();//??????RTC????
-
-		RTC_ExitConfigMode(); //??RTC????
-		RTC_WaitForLastTask();//??????RTC????
-
-	}
-  return;
+static void RTC_NVIC_Config(void)
+{	
+  NVIC_InitTypeDef NVIC_InitStructure;
+	NVIC_InitStructure.NVIC_IRQChannel = RTC_IRQn;		//RTC全局中断
+	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0;	//先占优先级1位,从优先级3位
+	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;	//先占优先级0位,从优先级4位
+	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;		//使能该通道中断
+	NVIC_Init(&NVIC_InitStructure);		//根据NVIC_InitStruct中指定的参数初始化外设NVIC寄存器
 }
+
+
+int RTC_Init(void)
+{
+	//检查是不是第一次配置时钟
+	u8 temp=0;
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);	//使能PWR和BKP外设时钟   
+	PWR_BackupAccessCmd(ENABLE);	//使能后备寄存器访问  
+	RCC_LSICmd(ENABLE);
+	if (BKP_ReadBackupRegister(BKP_DR1) != 0x5050)		//从指定的后备寄存器中读出数据:读出了与写入的指定数据不相乎
+	{	 			
+		BKP_DeInit();	//复位备份区域 	
+		//RCC_LSEConfig(RCC_LSE_OFF);	//设置外部低速晶振(LSE),使用外设低速晶振
+		RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI);
+		while (RCC_GetFlagStatus(RCC_FLAG_LSIRDY) == RESET&&temp<250)	//检查指定的RCC标志位设置与否,等待低速晶振就绪
+		{
+			temp++;
+			//rt_thread_sleep(1);
+		}
+		if(temp>=250)return 1;//初始化时钟失败,晶振有问题	    
+		RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI);		//设置RTC时钟(RTCCLK),选择LSE作为RTC时钟    
+		RCC_RTCCLKCmd(ENABLE);	//使能RTC时钟  
+		RTC_WaitForLastTask();	//等待最近一次对RTC寄存器的写操作完成
+		RTC_WaitForSynchro();		//等待RTC寄存器同步  
+		//RTC_ITConfig(RTC_IT_SEC, ENABLE);		//使能RTC秒中断
+		RTC_WaitForLastTask();	//等待最近一次对RTC寄存器的写操作完成
+		RTC_EnterConfigMode();/// 允许配置	
+		RTC_SetPrescaler(40000); //设置RTC预分频的值
+		RTC_WaitForLastTask();	//等待最近一次对RTC寄存器的写操作完成
+		//RTC_Set(2015,1,14,17,42,55);  //设置时间	
+		
+		RTC_ITConfig(RTC_IT_ALR, ENABLE);	//使能RTC秒中断
+		RTC_NVIC_Config();//RCT中断分组设置	
+		
+		RTC_ExitConfigMode(); //退出配置模式  
+		BKP_WriteBackupRegister(BKP_DR1, 0X5050);	//向指定的后备寄存器中写入用户程序数据
+	}
+	else//系统继续计时
+	{
+
+		RTC_WaitForSynchro();	//等待最近一次对RTC寄存器的写操作完成
+		RTC_WaitForLastTask();	//等待最近一次对RTC寄存器的写操作完成
+	}
+		    				     	
+	return 0; //ok
+
+}		 				    
+//RTC时钟中断
+//每秒触发一次  
+//extern u16 tcnt; 
+void RTC_IRQHandler(void)
+{		 
+	if (RTC_GetITStatus(RTC_IT_SEC) != RESET)//秒钟中断
+	{
+	}
+	if(RTC_GetITStatus(RTC_IT_ALR)!= RESET)//闹钟中断
+	{
+		//RTC_SetAlarm(RTC_GetCounter() + 5);
+		printf("alarm .\r\n");
+	} 				  								 
+
+	RTC_ClearITPendingBit(RTC_IT_SEC|RTC_IT_OW|RTC_IT_ALR);		//清闹钟中断
+		  	    						 	   	 
+}
+
+////
+//void RTC_Init(void)
+//{
+
+//	RCC_APB1PeriphClockCmd(RCC_APB1Periph_BKP | RCC_APB1Periph_PWR , ENABLE);
+//	PWR_BackupAccessCmd(ENABLE);//???????,??????????
+
+
+//	if(BKP_ReadBackupRegister(BKP_DR1) != 0xAA00)//Vbat?VDD??
+//	{
+//		BKP_DeInit();  //??????,?BKP?????
+//		RCC_LSICmd(ENABLE);//????????LSI
+//		while(RCC_GetFlagStatus(RCC_FLAG_LSIRDY) == 0) 
+//		{
+//		}
+
+
+//		RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI);
+//		//RCC_RTCCLKConfig(RCC_RTCCLKSource_LSE);//????????LSE?RTC???
+
+//		RCC_RTCCLKCmd(ENABLE);//????RTC??
+
+
+//		RTC_WaitForLastTask();//??????RTC????(??,?????RTC?????,????????????)
+//		RTC_WaitForSynchro();//???APB1???,???RTC???
+
+
+//		///////////////// ////(???????)////////////////////////////
+
+//		RTC_EnterConfigMode();//??RTC??
+//		RTC_WaitForLastTask();//??????RTC????
+
+
+//		RTC_SetPrescaler(40000);//????1HZ
+//		RTC_WaitForLastTask();//??????RTC????
+
+//		RTC_ITConfig(RTC_IT_ALR , DISABLE);//??????.  ???RTC_IT_SEC
+
+//		RTC_WaitForLastTask();//??????RTC????
+
+
+
+//		RTC_WaitForLastTask();//??????RTC????
+
+//		RTC_ExitConfigMode(); //??RTC????
+
+
+//		BKP_WriteBackupRegister(BKP_DR1, 0xAA00);//???????????
+
+//	}
+
+//	else//????????????
+//	{
+
+//		RTC_WaitForSynchro();//???APB1???,???RTC???
+
+//		RTC_EnterConfigMode();//??RTC??
+
+//		RTC_ITConfig(RTC_IT_ALR, DISABLE);
+
+//		RTC_WaitForLastTask();//??????RTC????
+
+//		RTC_ExitConfigMode(); //??RTC????
+//		RTC_WaitForLastTask();//??????RTC????
+
+//	}
+//  return;
+//}
 
 /*******************************************************************************
 * Function Name  : Time_Display

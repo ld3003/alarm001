@@ -31,7 +31,7 @@
 #include <string.h>
 
 /* Private function prototypes -----------------------------------------------*/
-void RTC_Init(void);
+int RTC_Init(void);
 void Time_Display(void);
 void Time_Regulate(void);
 

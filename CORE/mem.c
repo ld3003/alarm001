@@ -73,7 +73,7 @@ unsigned char* alloc_mem(char *file , int line , int size)
 	#ifdef USE_MALLOC
 	unsigned char * p = (unsigned char*)malloc(size);
 	
-	printf("ALLOC [%x]\r\n",(unsigned int)p);
+	printf("ALLOC [%x] [%s : %d]\r\n",(unsigned int)p,file,line);
 	
 	for(i=0;i<MEM_DEBUG_INFO_COUNT;i++)
 	{
@@ -118,8 +118,6 @@ void free_mem(char *file , int line , unsigned char *mem)
 	#ifdef USE_MALLOC
 	int i;
 	
-	char free_flag = 0;
-	
 	printf("FREE [%x]\r\n",(unsigned int)mem);
 	
 	for(i=0;i<MEM_DEBUG_INFO_COUNT;i++)
@@ -152,3 +150,4 @@ void free_mem(char *file , int line , unsigned char *mem)
 	#endif
 	//
 }
+
