@@ -23,6 +23,7 @@
 /* Includes ------------------------------------------------------------------*/
 
 #include "main.h"
+#include "ov2640api.h"
 
 #ifdef __GNUC__
   /* With GCC/RAISONANCE, small printf (option LD Linker->Libraries->Small printf
@@ -36,6 +37,7 @@
 static int gotoalarm(void);
 static void test_timer(void *arg)
 {
+	feed_watchdog();
 	printf("current RTC time %d \r\n",CURRENT_RTC_TIM);
 }
 
@@ -57,7 +59,23 @@ int main(void)
 	init_uart1();
 	init_uart2();
 	RTC_Init();
+	
+	
+//	{
+//		alloc_jpegbuffer();
+//		ov_poweron();
+//		_config_mco();
+//		InitSCCB();
+//		ov2640_init();
+//		for(;;){ov2640_read();utimer_sleep(2000);};
+//		free_jpegbuffer();
+//		
+//		for(;;){};
+//	}
+		
+	
 	WKUP_Pin_Init();
+	watch_dog_config();
 		
 	init_utimer();
 	init_task();
@@ -74,7 +92,10 @@ int main(void)
 	
 	
 //	gotoalarm();
-		
+
+	printf("(当前时间[%d]最后一次报警时间[%d]\r\n",CURRENT_RTC_TIM,GET_LAST_ALARM_TIME);
+	
+	led0_on();
 
 	for(;;)
 	{
@@ -94,18 +115,18 @@ int main(void)
 					break;
 				}
 			
-				printf("sleep...\r\n");
+				printf("进入休眠...\r\n");
 				Sys_Enter_Standby();
-				break;
+				break; 
 			
 			case SYSTEM_STATUS_RUN:
-				printf("run...\r\n");
+				printf("运行...\r\n");
 			
 				//如果当前的RTC小于60那么不进入报警规则
 				if (CURRENT_RTC_TIM < 60)
 				{
 					//
-					printf("CURRENT_RTC_TIM < 60\r\n");
+					printf("当前开机时间小于60秒\r\n");
 					SET_SYSTEM_STATUS(SYSTEM_STATUS_SLEEP);
 					Sys_Enter_Standby();
 					break;
@@ -114,7 +135,11 @@ int main(void)
 				//如果两次报警间隔不小于 120 则不进入报警
 				if ((CURRENT_RTC_TIM - GET_LAST_ALARM_TIME) < 120)
 				{
-					printf("(CURRENT_RTC_TIM - GET_LAST_ALARM_TIME) < 120 [%d][%d]\r\n",CURRENT_RTC_TIM,GET_LAST_ALARM_TIME);
+					printf("报警间隔小于120秒，当前时间 [%d] 最后一次报警时间 [%d]\r\n",CURRENT_RTC_TIM,GET_LAST_ALARM_TIME);
+					
+					//如果是因为距离上次报警时间不够，那么重新更新上次报警时间
+					SET_LAST_ALARM_TIME;
+					
 					SET_SYSTEM_STATUS(SYSTEM_STATUS_SLEEP);
 					Sys_Enter_Standby();
 					break;

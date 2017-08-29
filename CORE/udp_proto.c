@@ -362,3 +362,31 @@ unsigned char check_pkg(unsigned char *buf , int buflen)
 	
 	//
 }
+
+char * make_alarm(char *devid)
+{
+	char * p = 0;
+	cJSON * pJsonRoot = NULL;
+	
+	pJsonRoot = cJSON_CreateObject();
+	if(NULL == pJsonRoot){return 0;}
+	
+	cJSON_AddNumberToObject(pJsonRoot, "VER", 0);
+	cJSON_AddStringToObject(pJsonRoot, "DEVID", devid);
+	cJSON_AddNumberToObject(pJsonRoot, "MSGID",0);
+	cJSON_AddNumberToObject(pJsonRoot, "VOL",0);
+	cJSON_AddNumberToObject(pJsonRoot, "SIG",0);
+	cJSON_AddNumberToObject(pJsonRoot, "CMD",1);
+	
+	p = cJSON_Print(pJsonRoot);
+
+	if(NULL == p)
+	{
+			cJSON_Delete(pJsonRoot);
+			return 0;
+	}
+
+	cJSON_Delete(pJsonRoot);
+	
+	return p;
+}

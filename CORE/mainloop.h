@@ -52,10 +52,10 @@ struct MAINLOOP_DATA {
 	unsigned char modemtype;
 	
 	//计数器
-	unsigned char send_test_at_cnt;			//发送测试AT的次数
-	unsigned char check_1091_cnt;				//检查1091包是否回复的次数
 	unsigned char modem_reset_cnt;			//模块重启计数器
-	unsigned char test_at_cnt;					
+	unsigned char test_at_cnt;
+	
+	unsigned char send_10a0_cnt;
 	
 	unsigned char pictype;							//图片类型，测试？实际?
 	

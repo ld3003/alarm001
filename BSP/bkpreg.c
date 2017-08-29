@@ -22,7 +22,7 @@ void bkp32bit_write(unsigned int val , unsigned short *a , unsigned short *b)
 	t1 = val;
 	t2 = val;
 	*a = t1 >> 16;
-	*b = t2 & 0x00FF;
+	*b = t2 & 0x0000FFFF;
 	
 }
 

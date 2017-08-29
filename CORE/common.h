@@ -9,6 +9,10 @@
 #define DEBUG_VALUE(X) printf("VALUE:%s,%s,%d CODE[%d][%X]\r\n",__FILE__,__FUNCTION__,__LINE__,X,X)
 #define DEBUG_VALUE2(Y,X) printf("%s VALUE:%s,%s,%d CODE[%d][%X]\r\n",Y,__FILE__,__FUNCTION__,__LINE__,X,X)
 
+#define GetBit(dat,i) ((dat&((unsigned char)1<<i))?1:0)
+#define SetBit(dat,i) ((dat)|=((unsigned char)1<<(i)))
+#define ClearBit(dat,i) ((dat)&=(~((unsigned char)0x01<<(i))))
+
 //-------------------------
 
 typedef unsigned short c_u16;

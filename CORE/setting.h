@@ -22,8 +22,8 @@
 //服务器信息 
 //#define SERVER_ADDR								"52.80.4.27"
 //#define SERVER_PORT								29100
-#define SERVER_ADDR							"118.190.173.234"
-#define SERVER_PORT							8888
+#define SERVER_ADDR							"47.88.50.66"
+#define SERVER_PORT							29100
 
 //拍照上传配置
 #define PAIZHAO_COUNT							1 //拍照次数

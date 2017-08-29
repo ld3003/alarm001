@@ -200,11 +200,40 @@ void USART2_IRQHandler(void)
 		
 		
   }else{
-				USART_ClearITPendingBit(USART2, USART_IT_ORE);
+		USART_ClearITPendingBit(USART2, USART_IT_ORE);
 	}
 	//如果是溢出中断，则清除溢出
 	
 	
+}
+
+
+
+#include "ov2640api.h"
+void EXTI15_10_IRQHandler(void) 
+{
+	if (EXTI_GetITStatus(EXTI_Line15) != RESET)
+	{
+		
+		#define READ_VSYNC			(GPIOB->IDR & GPIO_Pin_8)  //GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_8)			//GPIO_Pin_8	????????
+		#define READ_PICLK			(GPIOB->IDR & GPIO_Pin_15) //GPIO_ReadInputDataBit(GPIOB,GPIO_Pin_15)		//1			//GPIO_Pin_15 ?????GPIO_Pin_15
+		#define READ_HREF				(GPIOC->IDR & GPIO_Pin_13) //GPIO_ReadInputDataBit(GPIOC,GPIO_Pin_13)		//1			//GPIO_Pin_15 ?????GPIO_Pin_15
+
+		#define READ_PA4				(GPIOA->IDR & GPIO_Pin_4)
+		
+		unsigned char tmp = (unsigned char)(GPIOB->IDR);
+		if (/*(READ_PICLK != 0) && */(READ_HREF != 0))
+		{
+//			if (READ_PA4 > 0)
+//			{
+//				SetBit(tmp,3);
+//			}
+			JpegBuffer[JpegDataCnt] = tmp;
+			JpegDataCnt ++ ;
+		}
+		EXTI_ClearITPendingBit(EXTI_Line15);
+		
+	} 
 }
 
 

@@ -2,6 +2,7 @@
 #define __udp_proto_h__
 
 #include "common.h"
+#include "JSON/cJSON.h"
 
 #define VER_2_1_6_a
 
@@ -131,6 +132,8 @@ int make_0x10A0(unsigned char *data , c_u16 alarmtype , c_u32 alarmnum , c_u32 a
 int make_0x10B0(unsigned char *data , char *json);
 unsigned char check_pkg(unsigned char *buf , int buflen);
 void update_message_id(void); //更新messageID，每次发送的数据包的message不一致，但是图片包，一幅图片拆分的包不计算在内
+
+char *make_alarm(char *devid);
 
 #endif
 

@@ -5,7 +5,6 @@
 
 struct MEM_DATA {
 	unsigned char led_cnt;
-	unsigned char send_10a0_cnt;
 	unsigned fangchaiflag; //这个变量保证仅仅被读取一次
 	unsigned int sig_led_counter;
 	unsigned char sig_led_flag;

@@ -170,6 +170,38 @@ void ov_poweroff(void)
 	//
 }
 
+void led0_on(void)
+{
+	GPIO_InitTypeDef GPIO_InitStructure;
+
+  LED0_RCC_TYPE( LED0_RCC , ENABLE); 						 
+  /**
+  *  LED1 -> PF6 , LED2 -> PF7 , LED3 -> PF8 , LED4 -> PF9
+  */					 
+  GPIO_InitStructure.GPIO_Pin =  OV_POEWR_PIN;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 
+  GPIO_Init(OV_POEWR_GPIO, &GPIO_InitStructure);
+	
+	GPIO_SetBits(LED0_GPIO,LED0_PIN);
+	
+}
+void led0_off(void)
+{
+	GPIO_InitTypeDef GPIO_InitStructure;
+
+  LED0_RCC_TYPE( LED0_RCC , ENABLE); 						 
+  /**
+  *  LED1 -> PF6 , LED2 -> PF7 , LED3 -> PF8 , LED4 -> PF9
+  */					 
+  GPIO_InitStructure.GPIO_Pin =  OV_POEWR_PIN;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 
+  GPIO_Init(OV_POEWR_GPIO, &GPIO_InitStructure);
+	
+	GPIO_ResetBits(LED0_GPIO,LED0_PIN);
+}
+
 void rtc_init(void)
 {
 	//

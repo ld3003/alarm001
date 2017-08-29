@@ -22,7 +22,7 @@
 struct MAINLOOP_DATA mdata;
 
 static int push_1091(void);
-static int push_10A0(void);
+static int push_alarm(void);
 static int push_img_routing(void);
 static void init_push_img(void);
 static void set_img_data(void);
@@ -31,6 +31,8 @@ static void status_master(unsigned char status , unsigned int time)
 {
 	static unsigned char __history_status = MDATA_STATUS_NULL;
 	static unsigned int current_status_time_ms = 0;
+	
+	//喂狗
 	
 	if (status != __history_status)
 	{
@@ -46,6 +48,7 @@ static void status_master(unsigned char status , unsigned int time)
 			printf("******************************************************\r\n");
 			printf("*               STATUS  ERROR!                       *\r\n");
 			printf("******************************************************\r\n");
+			
 			//当作一个看门狗来处理把
 			SET_SYSTEM_STATUS(SYSTEM_STATUS_SLEEP);
 			Sys_Enter_Standby();
@@ -94,6 +97,10 @@ void mainloop(void)
 			status_master(mdata.status,60*1000);
 			gprs_modem_power_off();
 			utimer_sleep(1000);
+		
+			//将一些关键计数器清零
+			mdata.modem_reset_cnt ++;
+			mdata.test_at_cnt = 0;
 			
 			mdata.status = MODEM_POWEROFF;
 			break;
@@ -119,11 +126,7 @@ void mainloop(void)
 		
 			//m6312_checkok();
 
-			//将一些关键计数器清零
-			mdata.check_1091_cnt = 0;
-			mdata.modem_reset_cnt = 0;
-			mdata.test_at_cnt = 0;
-				
+
 			mdata.status = MODEM_POWERACTIVE_TESTAT; //进入测试AT指令的环节
 		
 			break;
@@ -294,22 +297,31 @@ void mainloop(void)
 		case MODEM_GPRS_MIPOPEN_SUCCESS:
 		{
 			status_master(mdata.status,60*1000);
-			mdata.check_1091_cnt = 0;
-			mdata.status = PROTO_CHECK_1091;
+			mdata.status = PROTO_SEND_ALARM;
 			break;
 		}
 		
 		case PROTO_SEND_ALARM:
 			#if 1
 			status_master(mdata.status,10*60*1000);
-			if (push_10A0() < 0)
+			if (push_alarm() < 0)
 			{
 				//如果没发送成功超过3次，则重启
-				mem->send_10a0_cnt ++ ;
-				if (mem->send_10a0_cnt > 3)
+				mdata.send_10a0_cnt ++ ;
+				
+				if (mdata.send_10a0_cnt > 3)
 				{
-					SET_SYSTEM_STATUS(SYSTEM_STATUS_SLEEP);
-					Sys_Enter_Standby();
+					mdata.send_10a0_cnt = 0;
+					
+					//如果模块重启三次仍然没有成功，则进入休眠
+					if (mdata.modem_reset_cnt < 3)
+					{
+						mdata.status = MODEM_RESET;
+						
+					}else{
+						SET_SYSTEM_STATUS(SYSTEM_STATUS_SLEEP);
+						Sys_Enter_Standby();
+					}
 				}
 				
 			}else{
@@ -325,29 +337,6 @@ void mainloop(void)
 			break;
 		case PROTO_CHECK_1091:
 		{
-			
-			status_master(mdata.status,10*60*1000);
-			mdata.check_1091_cnt ++ ;
-			if (push_1091() < 0)
-			{
-				//如果发现1091发送不成功则进行数据测试
-				if (mdata.check_1091_cnt > PKG_RETRANS_COUNT)
-				{
-					mdata.status = PROTO_SEND_IMG_ERROR;
-					
-					SET_SYSTEM_STATUS(SYSTEM_STATUS_SLEEP);
-					Sys_Enter_Standby();
-					
-				}
-				
-			}else{
-				
-				
-				
-				mdata.status = PROTO_SEND_ALARM;
-
-				
-			}
 			
 			break;
 		}
@@ -545,7 +534,7 @@ static int push_1091(void)
 }
 
 
-static int push_10A0(void)
+static int push_alarm(void)
 {
 	
 	struct UDP_PROTO_HDR *hdr;
@@ -554,41 +543,58 @@ static int push_10A0(void)
 	int ret;
 	int ret1 = -1;
 	int length,recvlen;
+	char *tmp1;
 	
 	
 	unsigned char *sbuffer,*rbuffer;
 	char *hexbuffer;
 	char *atbuffer;
+	char *alarmstr;
 	
 	sbuffer = alloc_mem(__FILE__,__LINE__,512);
 	rbuffer = sbuffer;//alloc_mem(__FILE__,__LINE__,1024);
 	
 	length = make_0x10A0(sbuffer,1,1,0);
 	
-	recvlen = push_data_A6(sbuffer,length,rbuffer,WAIT_UDP_PKG_TIME);
 	
-	if (recvlen >= sizeof(struct UDP_PROTO_HDR))
+	tmp1 = (char*)alloc_mem(__FILE__,__LINE__,32);	
+	snprintf(tmp1,32,"%sf",IMEI_CODE);
+	alarmstr = make_alarm(tmp1);
+	free_mem(__FILE__,__LINE__,(unsigned char*)tmp1);
+	
+	if (alarmstr<=0)
+	{
+		ret1 = -1;
+		goto ret;
+	}
+	
+	printf("PUSH JSON : \r\n%s\r\n",alarmstr);
+	
+	recvlen = push_data_A6((unsigned char*)alarmstr,strlen(alarmstr),rbuffer,WAIT_UDP_PKG_TIME);
+	
+	//JSON 生成后一定要释放
+	free(alarmstr);
+	
+	if (recvlen > 0)
 	{
 		
-	  hdr = (struct UDP_PROTO_HDR *)rbuffer;
-
-		switch(hdr->cmdcode)
+		cJSON * pSub;
+		cJSON * pJson;
+    pJson = cJSON_Parse((char*)rbuffer);
+    if(NULL != pJson)
 		{
-			case 0xA020:
-				printf("RECV 20A0 SUCCESS \r\n");
-				//__WRITE_ALARM_FLAG(2); //标记当前已经报警过了
-				ret1 = 0;
-				break;
-			case 0x00:
-				break;
-			default:
-				break;
-			
+			ret1 = 0; //JSON 解析成功
+			printf("parser JSON success\r\n");
+			cJSON_Delete(pJson);
 		}
-		//
+		
+		
 	}else{
-		printf("RECV 2091 ERROR \r\n");
+		printf("RECV ALARM ERROR \r\n");
 	}
+	
+	
+	ret:
 	
 	free_mem(__FILE__,__LINE__,(unsigned char*)sbuffer);
 	//free_mem((unsigned char*)rbuffer);
@@ -798,99 +804,13 @@ static int push_img_routing(void)
 
 int push_data(unsigned char *data , int length , unsigned char *outdata , int timeout)
 {
-	int ret;
-	char *hexbuffer; //存储字符串格式裸数据
-	int recv_length = 0;
-	
-	hexbuffer = (char*)alloc_mem(__FILE__,__LINE__,length * 2 + 16);
-	conv_hex_2_string(data,length,hexbuffer);
-	
-	//AT函数的分解动作
-	
-	
-	
-	send_at("AT+MIPSEND=1,\"");
-	send_at(hexbuffer);
-	
-	printf("[%s]",hexbuffer);
-	
-	send_at("\"\r\n");
-	//snprintf(atbuffer,1024,"AT+MIPSEND=1,\"%s\"\r\n",hexbuffer);
-	at_cmd_wait(0,AT_MIPOPEN,0,100);
-	
-	ret = at_cmd_wait("AT+MIPPUSH=1\r\n",AT_MIPPUSH,AT_MIPPUSH_WAIT,timeout);
-
-	free_mem(__FILE__,__LINE__,(unsigned char*)hexbuffer);
-	
-	if (ret == AT_RESP_OK)
-	{
-		recv_length = parser_recv_g510_data(uart2_rx_buffer,outdata);
-	}else{
-		printf("recv data error !\r\n");
-		recv_length = -1;
-	}
-	
-	return recv_length;
+	return 0;
 }
 
 
 int push_data_m6312(unsigned char *data , int length , unsigned char *outdata , int timeout)
 {
-	extern unsigned char __debug_uart_flag;
-	int ret = 0;
-	char *hexbuffer; //存储字符串格式裸数据
-	int recv_length = 0;
-	
-	unsigned char Ox1A[1]={0x1A};
-	
-	hexbuffer = (char*)alloc_mem(__FILE__,__LINE__,length * 2 + 16);
-	conv_hex_2_string(data,length,hexbuffer);
-	
-	
-	//at+cmipmode=1
-	at_cmd_wait("at+cmipmode=1\r\n",AT_AT,AT_WAIT,1000);
-	
-	
-
-	send_at("AT+IPSEND=0\r\n");
-	at_cmd_wait_str(0,AT_NULL,">",100);
-	send_at(hexbuffer);
-	//send_data((unsigned char*)hexbuffer,strlen(hexbuffer));
-	
-	start_uart_debug();
-	send_data(Ox1A,1);
-	
-	//debug_buf("SEND TO SRV",data,length);
-	printf("SEND 2 SRV %s \r\n",hexbuffer);
-	//at_cmd_wait_str(0,AT_NULL,"OK",5000);
-	
-	ret = at_cmd_wait_str(0,AT_CMRD,"+CMRD",timeout);
-	
-	stop_uart_debug();
-	
-	//可能需要加一个延迟，等待串口数据接收完毕
-	
-	start_uart_debug();
-	utimer_sleep(100);
-	stop_uart_debug();
-	
-	start_uart_debug();
-	
-	if (ret == AT_RESP_OK)
-	{
-		
-		
-		DEBUG_VALUE((unsigned int)data);
-		DEBUG_VALUE((unsigned int)outdata);
-		ret = parser_recv_m6312_data(uart2_rx_buffer,outdata);
-		printf("recv data !!!!!!!!!!!!!!!!!!!!!!!!!!!\r\n");
-	}
-	
-	stop_uart_debug();
-	
-	free_mem(__FILE__,__LINE__,(unsigned char*)hexbuffer);
-	
-	return ret;
+	return 0;
 }
 
 int push_data_A6(unsigned char *data , int length , unsigned char *outdata , int timeout)
@@ -943,7 +863,7 @@ int push_data_A6(unsigned char *data , int length , unsigned char *outdata , int
 			
 			printf("colon %02x dot %02x \r\n",(unsigned int)colon,(unsigned int)dot);
 			
-			if (colon <= dot)
+			if ((colon <= dot) || ((colon-dot) > 8))
 			{
 				ret = 0;
 			}

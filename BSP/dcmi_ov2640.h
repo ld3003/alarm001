@@ -1,11 +1,34 @@
+/**
+  ******************************************************************************
+  * @file    DCMI/Camera/dcmi_ov2640.h
+  * @author  MCD Application Team
+  * @version V1.0.0
+  * @date    30-September-2011
+  * @brief   Header for dcmi_ov2640.c module
+  ******************************************************************************
+  * @attention
+  *
+  * THE PRESENT FIRMWARE WHICH IS FOR GUIDANCE ONLY AIMS AT PROVIDING CUSTOMERS
+  * WITH CODING INFORMATION REGARDING THEIR PRODUCTS IN ORDER FOR THEM TO SAVE
+  * TIME. AS A RESULT, STMICROELECTRONICS SHALL NOT BE HELD LIABLE FOR ANY
+  * DIRECT, INDIRECT OR CONSEQUENTIAL DAMAGES WITH RESPECT TO ANY CLAIMS ARISING
+  * FROM THE CONTENT OF SUCH FIRMWARE AND/OR THE USE MADE BY CUSTOMERS OF THE
+  * CODING INFORMATION CONTAINED HEREIN IN CONNECTION WITH THEIR PRODUCTS.
+  *
+  * <h2><center>&copy; COPYRIGHT 2011 STMicroelectronics</center></h2>
+  ******************************************************************************
+  */ 
 
+/* Define to prevent recursive inclusion -------------------------------------*/
 #ifndef __DCMI_OV2640_H
 #define __DCMI_OV2640_H
 
-#include <stm32f10x.h>
-
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
+
+typedef unsigned short u16;
+typedef unsigned char u8;
+typedef unsigned int u32;
 
 typedef enum   
 {
@@ -13,7 +36,7 @@ typedef enum
   OV2640_CAMERA            =   0x01      /* Use OV2640 Camera */
 }Camera_TypeDef;
 
-
+/* Image Sizes enumeration */
 typedef enum   
 {
   BMP_QQVGA             =   0x00,	    /* BMP Image QQVGA 160x120 Size */
@@ -24,7 +47,9 @@ typedef enum
   JPEG_352x288          =   0x05	    /* JPEG Image 352x288 Size */
 }ImageFormat_TypeDef;
 
+/* Includes ------------------------------------------------------------------*/
 
+/* Exported types ------------------------------------------------------------*/
 typedef struct
 {
   uint8_t Manufacturer_ID1;
@@ -33,7 +58,13 @@ typedef struct
   uint8_t PIDL;
 }OV2640_IDTypeDef;
 
+/* Exported constants --------------------------------------------------------*/
 
+/* Use this define to set the maximum delay timeout for the I2C DCMI_OV2640_SingleRandomWrite()
+   and DCMI_OV2640_SingleRandomRead() operations. Exeeding this timeout delay, 
+   the read/write functions will be aborted and return error code (0xFF).
+   The period of the delay will depend on the system operating frequency. The following
+   value has been set for system running at 168 MHz. */
 #define DCMI_TIMEOUT_MAX               100000
 
 #define OV2640_DEVICE_WRITE_ADDRESS    0x60
@@ -123,6 +154,8 @@ typedef struct
 #define OV2640_SENSOR_HISTO_LOW  0x61
 #define OV2640_SENSOR_HISTO_HIGH 0x62
 
+/* Exported macro ------------------------------------------------------------*/
+/* Exported functions ------------------------------------------------------- */
 
 void OV2640_HW_Init(void);
 void OV2640_Reset(void);
@@ -135,27 +168,35 @@ void OV2640_BrightnessConfig(uint8_t Brightness);
 void OV2640_ContrastConfig(uint8_t value1, uint8_t value2);
 void OV2640_BandWConfig(uint8_t BlackWhite);
 void OV2640_ColorEffectsConfig(uint8_t value1, uint8_t value2);
-
-uint8_t OV2640_WriteReg(uint16_t Addr, uint8_t Data);
-uint8_t OV2640_ReadReg(uint16_t Addr);
+uint8_t OV2640_WriteReg(unsigned char Addr, uint8_t Data);
+uint8_t OV2640_ReadReg(unsigned char Addr);
 
 void OV2640_CaptureGpioInit(void);
 
-int init_ov2640(void);
-void readimg(void);
+void __put_uart1_buffer(unsigned char *buffer , int length);
+int __test_ov2640(void);
+void ov2640_power_on(char on);
+void ov2640_flashlight_power(char on);
+void getimg(void);
 
-#define JPEG_BUFFER_LENGTH (1024*10)
-extern unsigned char *JpegBuffer;
+#define JPEG_BUFFER_LENGTH (1024*12 + 512)
 extern unsigned int JpegDataCnt;
-extern unsigned char VsyncActive;
 
+#include <stm32f10x.h>
 
 #define OV_DISABLE_IT	__set_PRIMASK(1)
 #define OV_ENABLE_IT		__set_PRIMASK(0)
 
+void disable_href_isr(void);
+void enable_href_isr(void);
 
-void config_mco(void);
-void save_to_flash(int index , unsigned char *buffer , int buflen , unsigned int time);
+void initov(void);
+void initOV2640PWM(void);
+void init_fangchai(void);
+
+
+#define xMONIOV
+
 #endif /* __DCMI_OV2640_H */
 
 /******************* (C) COPYRIGHT 2011 STMicroelectronics *****END OF FILE****/
