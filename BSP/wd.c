@@ -3,8 +3,6 @@
 
 void watch_dog_config(void)
 {
-	
-	return;
    	/* Enable write access to IWDG_PR and IWDG_RLR registers */
  	IWDG_WriteAccessCmd(IWDG_WriteAccess_Enable);	
 	/* 
@@ -20,13 +18,6 @@ void watch_dog_config(void)
 	IWDG_ReloadCounter();	
 	IWDG_Enable();
 
-}
-
-void enable_wg(void)
-{
-	
-	//watch_dog_config();
-	//IWDG_Enable();
 }
 
 void feed_watchdog(void)

@@ -4,7 +4,6 @@
 #include <stm32f10x_iwdg.h>
 
 void watch_dog_config(void);
-void enable_wg(void);
 void feed_watchdog(void);
 
 #endif

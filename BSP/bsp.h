@@ -45,6 +45,8 @@ void led0_off(void);
 
 void led_ctrl(unsigned char index , unsigned char status);
 
+void setfrq(unsigned char mod);
+
 
 #endif
 

@@ -3,6 +3,7 @@
 
 void Sys_Standby(void);
 void Sys_Enter_Standby(void);
+void Sys_Enter_DeepStandby(void);
 void WKUP_Pin_Init(void);
 
 #endif

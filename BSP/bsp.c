@@ -178,10 +178,10 @@ void led0_on(void)
   /**
   *  LED1 -> PF6 , LED2 -> PF7 , LED3 -> PF8 , LED4 -> PF9
   */					 
-  GPIO_InitStructure.GPIO_Pin =  OV_POEWR_PIN;
+  GPIO_InitStructure.GPIO_Pin =  LED0_PIN;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 
-  GPIO_Init(OV_POEWR_GPIO, &GPIO_InitStructure);
+  GPIO_Init(LED0_GPIO, &GPIO_InitStructure);
 	
 	GPIO_SetBits(LED0_GPIO,LED0_PIN);
 	
@@ -214,6 +214,11 @@ void watchdog_init(void)
 void led_ctrl(unsigned char index , unsigned char status)
 {
 	
+	//
+}
+
+void setfrq(unsigned char mod)
+{
 	//
 }
 

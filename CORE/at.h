@@ -20,8 +20,8 @@ enum {
 	
 };
 
-#define AT_WAIT_LEVEL_1				100
-#define AT_WAIT_LEVEL_2				200
+#define AT_WAIT_LEVEL_1				300
+#define AT_WAIT_LEVEL_2				500
 #define AT_WAIT_LEVEL_3				500
 #define AT_WAIT_LEVEL_4				1000
 #define AT_WAIT_LEVEL_5				5000

@@ -161,10 +161,10 @@ void stop_uart_debug(void)
 {
 	#ifdef ENABLE_UART_DEBUG
 	__debug_uart_flag = 0;
-	printf("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\r\n");
+	printf("\r\n\r\n\r\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\r\n");
 	printf("MODEM_UART DEBUG STR:[%s]\r\n",__debug_uart_buffer);
 	debug_buf("MODEM_UART DEBUG HEX ",__debug_uart_buffer,__debug_uart_buffer_index);
-	printf("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\r\n");
+	printf("++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\r\n\r\n\r\n");
 	free_mem(__FILE__,__LINE__,__debug_uart_buffer);
 	#endif
 	//
@@ -212,6 +212,10 @@ void USART2_IRQHandler(void)
 #include "ov2640api.h"
 void EXTI15_10_IRQHandler(void) 
 {
+	
+	/*
+		OV2640 数据采集中断
+	*/
 	if (EXTI_GetITStatus(EXTI_Line15) != RESET)
 	{
 		
@@ -222,12 +226,8 @@ void EXTI15_10_IRQHandler(void)
 		#define READ_PA4				(GPIOA->IDR & GPIO_Pin_4)
 		
 		unsigned char tmp = (unsigned char)(GPIOB->IDR);
-		if (/*(READ_PICLK != 0) && */(READ_HREF != 0))
+		if (READ_HREF != 0)
 		{
-//			if (READ_PA4 > 0)
-//			{
-//				SetBit(tmp,3);
-//			}
 			JpegBuffer[JpegDataCnt] = tmp;
 			JpegDataCnt ++ ;
 		}

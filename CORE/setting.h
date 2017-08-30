@@ -22,7 +22,7 @@
 //服务器信息 
 //#define SERVER_ADDR								"52.80.4.27"
 //#define SERVER_PORT								29100
-#define SERVER_ADDR							"47.88.50.66"
+#define SERVER_ADDR							"easy-iot.cc"
 #define SERVER_PORT							29100
 
 //拍照上传配置
@@ -34,7 +34,8 @@
 
 #define FW_VERSION								0x0000
 
-//#define OLD_BRD
+#define POWERUP_MIN_TIME					0 //开机沉默时间
+#define ALARM_MIN_TIME						60
 
 #endif
 

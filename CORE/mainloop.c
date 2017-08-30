@@ -22,7 +22,7 @@
 struct MAINLOOP_DATA mdata;
 
 static int push_1091(void);
-static int push_alarm(void);
+static int push_10A0(c_u16 alarmtype);
 static int push_img_routing(void);
 static void init_push_img(void);
 static void set_img_data(void);
@@ -50,7 +50,7 @@ static void status_master(unsigned char status , unsigned int time)
 			printf("******************************************************\r\n");
 			
 			//当作一个看门狗来处理把
-			SET_SYSTEM_STATUS(SYSTEM_STATUS_SLEEP);
+			SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
 			Sys_Enter_Standby();
 			//
 		}else{
@@ -74,6 +74,126 @@ void mainloop_init(void)
 	mdata.status = SYS_INIT;
 }
 
+static void SYSINIT(void)
+{
+	switch(GET_SYSTEM_STATUS)
+		{
+			case SYSTEM_STATUS_INIT:
+				IOI2C_Init();
+				init_mma845x();
+			
+				//如果当前的RTC小于60那么不进入报警规则
+				if (CURRENT_RTC_TIM < POWERUP_MIN_TIME)
+				{
+					
+					printf("当前开机时间小于%d秒\r\n",POWERUP_MIN_TIME);
+					printf("进入长达 %d 秒的深度休眠\r\n",POWERUP_MIN_TIME - CURRENT_RTC_TIM);
+					SET_NEXT_WAKEUP_TIME(CURRENT_RTC_TIM + POWERUP_MIN_TIME);
+					SET_SYSTEM_STATUS(SYSTEM_STATUS_DEEPSLEEP);
+					Sys_Enter_DeepStandby();
+					
+				}
+			
+				SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
+				Sys_Enter_Standby();
+				
+				break;
+			case SYSTEM_STATUS_DEEPSLEEP:
+				
+				if (CURRENT_RTC_TIM > GET_NEXT_WAKEUP_TIME)
+				{
+					printf("退出深度休眠，进入普通休眠\r\n");
+					
+					SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
+					Sys_Enter_Standby();
+					
+				}else{
+					printf("深度休眠中...\r\n");
+					Sys_Enter_DeepStandby();
+				}
+				break;
+			case SYSTEM_STATUS_WAIT_WAKEUP:
+			{
+				
+				//被唤醒了
+				
+				if (GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0))
+				{
+					//被外部中断唤醒
+
+					
+					//如果两次报警间隔不小于 120 则不进入报警
+					if ((CURRENT_RTC_TIM - GET_LAST_ALARM_TIME) < ALARM_MIN_TIME)
+					{
+					
+						printf("报警间隔小于%d秒，当前时间 [%d] 最后一次报警时间 [%d]\r\n",ALARM_MIN_TIME,CURRENT_RTC_TIM,GET_LAST_ALARM_TIME);
+						
+						//如果是因为距离上次报警时间不够，那么重新更新上次报警时间
+						
+						SET_LAST_ALARM_TIME;
+						
+						printf("进入长达 %d 秒的深度休眠\r\n",ALARM_MIN_TIME-10); // 留10秒的阈值
+						SET_NEXT_WAKEUP_TIME(CURRENT_RTC_TIM + ALARM_MIN_TIME);
+						SET_SYSTEM_STATUS(SYSTEM_STATUS_DEEPSLEEP);
+						Sys_Enter_DeepStandby();
+						
+					}else{
+						
+						printf("进入报警状态，清空静止报警标记位\r\n");
+						
+						SET_MOTIONLESS_STATUS(0);
+						
+						mdata.doing = DOING_10A0;
+						mdata._10a0type = 0;
+						
+						mdata.status = MODEM_POWEROFF;
+						
+						SET_LAST_ALARM_TIME;
+						
+						goto exit_standby;
+					}
+				}else{
+					//看门狗唤醒 / 定期唤醒
+					
+					if (GET_MOTIONLESS_STATUS == 0)
+					{
+						
+						if ((CURRENT_RTC_TIM - GET_LAST_ALARM_TIME) > 120)
+						{
+							mdata.doing = DOING_10A0;
+							mdata._10a0type = 1;
+							mdata.status = MODEM_POWEROFF;
+							
+							SET_MOTIONLESS_STATUS(1);
+							
+							goto exit_standby;
+							
+						}else{
+							printf("如果 %d 秒后 设备仍然静止，则触发静止报警 \r\n",(120 - (CURRENT_RTC_TIM - GET_LAST_ALARM_TIME)));
+						}
+						
+					}
+					
+					printf("进入休眠...\r\n");
+					Sys_Enter_Standby();
+					
+				}
+				
+				break; 
+			}
+			
+			case SYSTEM_STATUS_RUN:
+			
+				
+				
+				break;
+		}
+		
+		exit_standby:
+		printf("退出休眠\r\n");
+		return;
+}
+
 void mainloop(void)
 {
 	
@@ -83,20 +203,12 @@ void mainloop(void)
 	switch(mdata.status)
 	{
 		case SYS_INIT:
-			mdata.status = MODEM_POWEROFF;
-			//计数器清空
+			SYSINIT();
 			break;
-		case SYS_INIT2:
-			//paizha
-			break;
-		case SYS_INIT3:
-			mdata.status = MODEM_POWEROFF;
-			
-			break;
+		
 		case MODEM_RESET:
 			status_master(mdata.status,60*1000);
-			gprs_modem_power_off();
-			utimer_sleep(1000);
+			printf("重启GPRS模块\r\n");
 		
 			//将一些关键计数器清零
 			mdata.modem_reset_cnt ++;
@@ -104,6 +216,7 @@ void mainloop(void)
 			
 			mdata.status = MODEM_POWEROFF;
 			break;
+		
 		case MODEM_POWEROFF:
 			
 			/*
@@ -113,20 +226,13 @@ void mainloop(void)
 		
 			status_master(mdata.status,60*1000);
 		
-
-			//配置RING为高阻状态
-			config_ring();
-			//配置紧急启动管教
-			config_resetPin();
-
+			printf("启动GPRS模块\r\n");
+		
 			gprs_modem_power_off();
 			utimer_sleep(1000);
 			gprs_modem_power_on();
 			utimer_sleep(3000);
 		
-			//m6312_checkok();
-
-
 			mdata.status = MODEM_POWERACTIVE_TESTAT; //进入测试AT指令的环节
 		
 			break;
@@ -157,8 +263,9 @@ void mainloop(void)
 			if (ret == AT_RESP_OK)
 			{
 				//模块AT指令返回正确，认为模块已经正常启动，进入下一个状态
+				printf("模块开机成功,休眠10秒让模块初始化完成\r\n");
+				utimer_sleep(10000);
 				mdata.status = MODEM_GET_IMEI;
-				//mdata.status = MODEM_ATD;
 				
 			}else{
 				
@@ -169,7 +276,7 @@ void mainloop(void)
 
 					//模块重启了3次都没有AT指令发送成功，可以认为是串口溢出了，不能收到信息了，重启整个系统
 					printf("******************************************************\r\n");
-					printf("*               MODEM POWER ERROR!                   *\r\n");
+					printf("*               模块开机失败                         *\r\n");
 					printf("******************************************************\r\n");
 					//30秒后再启动
 					//__SET_NEXT_WAKEUP_TIM(26);
@@ -181,9 +288,6 @@ void mainloop(void)
 		}
 
 		case MODEM_ATD:
-			at_cmd_wait_str("ATD15620270932;\r\n",AT_GSN,"OK",100);
-			utimer_sleep(10000);
-			at_cmd_wait_str("ATH\r\n",AT_GSN,"OK",100);
 			break;
 		case MODEM_GET_IMEI:
 		{
@@ -195,28 +299,8 @@ void mainloop(void)
 		}
 		case MODEM_CHECK_MODEM_TYPE:
 		{
-			int ret;
 			
 			status_master(mdata.status,60*1000);
-			
-			ret = at_cmd_wait("AT+CMVERSION\r\n",AT_AT,0,100);
-			ret = at_cmd_wait("AT+CGMR\r\n",AT_CGMR_CHECK6312,0,100);
-			if (ret == AT_RESP_MODEM_TYPE_M6312)
-			{
-				mdata.modemtype = MODEM_TYPE_M6312;
-				
-				printf("MODEM TYPE IS  M6312 . \r\n");
-				//
-			}
-			
-			if (ret == AT_RESP_MODEM_TYPE_G510)
-			{
-				mdata.modemtype = MODEM_TYPE_G510;
-				
-				printf("MODEM TYPE IS  G510 . \r\n");
-				//
-			}
-			
 			mdata.status = MODEM_POWERON;
 			
 			break;
@@ -228,15 +312,16 @@ void mainloop(void)
 			
 			status_master(mdata.status,60*1000);
 			
-			//发送网络注册AT命令，并检查GPRS附着状态
-			ret = at_cmd_wait("AT+CCID\r\n",AT_AT,0,100);
-			ret = at_cmd_wait("AT+CMEE=2;+CREG=2;+CGREG=2\r\n",AT_AT,0,100);
-			ret = at_cmd_wait("AT+CPIN?;+CSQ;+CREG?;+CGREG?\r\n",AT_CGREG,0,100);
-			if (ret == AT_RESP_CGREGOK)
+			ret = at_cmd_wait_str("AT+CPIN?\r\n",AT_AT,"+CPIN: READY",300);
+			
+			if (ret == AT_RESP_OK)
 			{
 				//网络已经注册成功，进入查询信号质量
+				printf("检查SIM卡成功\r\n");
 				mdata.status = MODEM_CHECK_CSQ;
 				
+			}else{
+				printf("检查SIM卡失败r\n");
 			}
 			break;
 		}
@@ -246,7 +331,7 @@ void mainloop(void)
 			
 			status_master(mdata.status,60*1000);
 			at_cmd_wait("AT+CSQ\r\n",AT_CSQ,0,500);
-			printf("GSM SIGNAL : %d\r\n",gsm_signal);
+			printf("当前信号质量 : %d\r\n",gsm_signal);
 			mdata.status = MODEM_GPRS_READY;
 			
 			break;
@@ -255,21 +340,44 @@ void mainloop(void)
 		
 		case MODEM_GPRS_READY:
 		{
-			int ret = 0;
-			ret += at_cmd_wait("AT+CGDCONT=1,\"IP\",\"CMNET\"\r\n",AT_CGDCONT,AT_WAIT,5000);
-			ret += at_cmd_wait("AT+CGACT=1,1\r\n",AT_CGACT,AT_WAIT,5000);
-			ret += at_cmd_wait_str_str("AT+CGATT=1\r\n","OK","OK",5000);
-			//ret += at_cmd_wait_str_str("AT+CIPMUX=1\r\n","OK","OK",1000);
+			status_master(mdata.status,60*1000);
+			mdata.status = MODEM_GPRS_CGDCONT;
+			break;
+		}
+		
+		case MODEM_GPRS_CGDCONT:
+		{
+			int ret;
+			status_master(mdata.status,60*1000);
+			ret = at_cmd_wait("AT+CGDCONT=1,\"IP\",\"CMNET\"\r\n",AT_CGDCONT,AT_WAIT,5000);
+			if (ret == 0)
+			{
+				mdata.status = MODEM_GPRS_CGACT;
+			}
+			
+			break;
+		}
+		case MODEM_GPRS_CGACT:
+		{
+			int ret;
+			status_master(mdata.status,60*1000);
+			ret = at_cmd_wait("AT+CGACT=1,1\r\n",AT_CGACT,AT_WAIT,5000);
+			if (ret == 0)
+			{
+				mdata.status = MODEM_GPRS_CGATT;
+			}
+			break;
+		}
+		
+		case MODEM_GPRS_CGATT:
+		{
+			int ret;
+			status_master(mdata.status,60*1000);
+			ret = at_cmd_wait_str_str("AT+CGATT=1\r\n","OK","OK",5000);
 			if (ret == 0)
 			{
 				mdata.status = MODEM_GPRS_MIPCALL_SUCCESS;
-				printf("mdata.status = MODEM_GPRS_MIPCALL_SUCCESS;\r\n");
-				//for(;;){};
 			}
-			
-			//网络状态已经注册好了，发送拨号命令
-			
-			//准备好了
 			break;
 		}
 		
@@ -288,8 +396,8 @@ void mainloop(void)
 			if(ret == 0)
 			{
 				mdata.status = MODEM_GPRS_MIPOPEN_SUCCESS;
-				printf("mdata.status = MODEM_GPRS_MIPOPEN_SUCCESS;\r\n");
-				//for(;;){};
+				printf("SERVER链接成功\r\n");
+			}else{
 			}
 			
 			break;
@@ -302,9 +410,10 @@ void mainloop(void)
 		}
 		
 		case PROTO_SEND_ALARM:
-			#if 1
+			
 			status_master(mdata.status,10*60*1000);
-			if (push_alarm() < 0)
+		
+			if (push_10A0(mdata._10a0type) < 0)
 			{
 				//如果没发送成功超过3次，则重启
 				mdata.send_10a0_cnt ++ ;
@@ -319,7 +428,9 @@ void mainloop(void)
 						mdata.status = MODEM_RESET;
 						
 					}else{
-						SET_SYSTEM_STATUS(SYSTEM_STATUS_SLEEP);
+						printf("重启超过三次了，进入休眠\r\n");
+						
+						SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
 						Sys_Enter_Standby();
 					}
 				}
@@ -327,13 +438,13 @@ void mainloop(void)
 			}else{
 				
 				//
-				SET_LAST_ALARM_TIME;
-				SET_SYSTEM_STATUS(SYSTEM_STATUS_SLEEP);
+				printf("发送10a0数据成功\r\n");
+				SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
 				Sys_Enter_Standby();
 				
 				
 			}
-			#endif
+			
 			break;
 		case PROTO_CHECK_1091:
 		{
@@ -534,7 +645,7 @@ static int push_1091(void)
 }
 
 
-static int push_alarm(void)
+static int push_10A0(c_u16 alarmtype)
 {
 	
 	struct UDP_PROTO_HDR *hdr;
@@ -543,58 +654,91 @@ static int push_alarm(void)
 	int ret;
 	int ret1 = -1;
 	int length,recvlen;
-	char *tmp1;
 	
 	
 	unsigned char *sbuffer,*rbuffer;
 	char *hexbuffer;
 	char *atbuffer;
-	char *alarmstr;
+	
+	sbuffer = alloc_mem(__FILE__,__LINE__,512);
+	rbuffer = sbuffer;//alloc_mem(__FILE__,__LINE__,1024);
+	
+	length = make_0x10A0(sbuffer,alarmtype,1,0);
+	
+	recvlen = push_data_A6(sbuffer,length,rbuffer,WAIT_UDP_PKG_TIME);
+	
+	if (recvlen >= sizeof(struct UDP_PROTO_HDR))
+	{
+		
+	  hdr = (struct UDP_PROTO_HDR *)rbuffer;
+
+		switch(hdr->cmdcode)
+		{
+			case 0xA020:
+				printf("服务器成功收到 10A0\r\n");
+				ret1 = 0;
+				break;
+			case 0x00:
+				break;
+			default:
+				break;
+			
+		}
+		//
+	}else{
+		printf("RECV 2091 ERROR \r\n");
+	}
+	
+	free_mem(__FILE__,__LINE__,(unsigned char*)sbuffer);
+	//free_mem((unsigned char*)rbuffer);
+	
+	return ret1;
+	//
+}
+
+static int push_10A1(void)
+{
+	
+	struct UDP_PROTO_HDR *hdr;
+	
+	
+	int ret;
+	int ret1 = -1;
+	int length,recvlen;
+	
+	
+	unsigned char *sbuffer,*rbuffer;
+	char *hexbuffer;
+	char *atbuffer;
 	
 	sbuffer = alloc_mem(__FILE__,__LINE__,512);
 	rbuffer = sbuffer;//alloc_mem(__FILE__,__LINE__,1024);
 	
 	length = make_0x10A0(sbuffer,1,1,0);
 	
+	recvlen = push_data_A6(sbuffer,length,rbuffer,WAIT_UDP_PKG_TIME);
 	
-	tmp1 = (char*)alloc_mem(__FILE__,__LINE__,32);	
-	snprintf(tmp1,32,"%sf",IMEI_CODE);
-	alarmstr = make_alarm(tmp1);
-	free_mem(__FILE__,__LINE__,(unsigned char*)tmp1);
-	
-	if (alarmstr<=0)
-	{
-		ret1 = -1;
-		goto ret;
-	}
-	
-	printf("PUSH JSON : \r\n%s\r\n",alarmstr);
-	
-	recvlen = push_data_A6((unsigned char*)alarmstr,strlen(alarmstr),rbuffer,WAIT_UDP_PKG_TIME);
-	
-	//JSON 生成后一定要释放
-	free(alarmstr);
-	
-	if (recvlen > 0)
+	if (recvlen >= sizeof(struct UDP_PROTO_HDR))
 	{
 		
-		cJSON * pSub;
-		cJSON * pJson;
-    pJson = cJSON_Parse((char*)rbuffer);
-    if(NULL != pJson)
+	  hdr = (struct UDP_PROTO_HDR *)rbuffer;
+
+		switch(hdr->cmdcode)
 		{
-			ret1 = 0; //JSON 解析成功
-			printf("parser JSON success\r\n");
-			cJSON_Delete(pJson);
+			case 0xA020:
+				printf("服务器成功收到 10A0\r\n");
+				ret1 = 0;
+				break;
+			case 0x00:
+				break;
+			default:
+				break;
+			
 		}
-		
-		
+		//
 	}else{
-		printf("RECV ALARM ERROR \r\n");
+		printf("RECV 2091 ERROR \r\n");
 	}
-	
-	
-	ret:
 	
 	free_mem(__FILE__,__LINE__,(unsigned char*)sbuffer);
 	//free_mem((unsigned char*)rbuffer);
@@ -802,17 +946,6 @@ static int push_img_routing(void)
 	//
 }
 
-int push_data(unsigned char *data , int length , unsigned char *outdata , int timeout)
-{
-	return 0;
-}
-
-
-int push_data_m6312(unsigned char *data , int length , unsigned char *outdata , int timeout)
-{
-	return 0;
-}
-
 int push_data_A6(unsigned char *data , int length , unsigned char *outdata , int timeout)
 {
 	extern unsigned char __debug_uart_flag;
@@ -831,14 +964,21 @@ int push_data_A6(unsigned char *data , int length , unsigned char *outdata , int
 	
 	if (ret != 0)
 	{
-		printf("wait >>>>>>>>>>>>>>> error \r\n");
+		printf("等待发送标志超时 \r\n");
 		return -1;
 	}
 	
 	send_data(data,length);
 	
 	ret = at_cmd_wait_str_str(0,"SEND","OK",timeout);
-	printf("A6 udp pkg send  %d \r\n",ret);
+	
+	if (ret != 0)
+	{
+		printf("发送UDP数据失败\r\n");
+		return -1;
+	}else{
+		printf("发送UDP数据成功\r\n");
+	}
 	
 	//如果接收缓冲有数据则期待一个接收
 	if ((outdata > 0) && (ret == 0))
@@ -855,6 +995,8 @@ int push_data_A6(unsigned char *data , int length , unsigned char *outdata , int
 			char tmpbuf[8];
 			char x;
 			int rlen;
+			
+			printf("收到服务器数据\r\n");
 			
 			DEBUG_VALUE(0);
 			
@@ -889,9 +1031,10 @@ int push_data_A6(unsigned char *data , int length , unsigned char *outdata , int
 			}
 
 		}else{
+			printf("服务器没有数据返回\r\n");
 			ret = 0;
 		}
-		DEBUG_VALUE(0);
+		
 	}else{
 		ret = -1;
 	}

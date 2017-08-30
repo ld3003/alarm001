@@ -6,13 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-	
-void Sys_Standby(void)
-{	
-	RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);	//使能PWR外设时钟
-	PWR_WakeUpPinCmd(ENABLE);  //使能唤醒管脚功能
-	PWR_EnterSTANDBYMode();	  //进入待命（STANDBY）模式 		 
-}
+
 //系统进入待机模式
 void Sys_Enter_Standby(void)
 {
@@ -38,9 +32,39 @@ void Sys_Enter_Standby(void)
   GPIO_Init(GPIOB, &GPIO_InitStructure);
 	GPIO_Init(GPIOF, &GPIO_InitStructure);
 	
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);	//使能PWR外设时钟
+	PWR_WakeUpPinCmd(ENABLE);  //使能唤醒管脚功能
+	PWR_EnterSTANDBYMode();	  //进入待命（STANDBY）模式 	
 	
-	WKUP_Pin_Init();
-	Sys_Standby();
+}
+
+void Sys_Enter_DeepStandby(void)
+{
+	
+	GPIO_InitTypeDef GPIO_InitStructure;
+	
+	printf("Sys_Enter_Standby ...  \r\n");
+
+  /* Configure all GPIO as analog to reduce current consumption on non used IOs */
+  /* Enable GPIOs clock */
+  RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOA,ENABLE);
+	RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOB,ENABLE);
+	RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOC,ENABLE);
+	RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOD,ENABLE);
+	RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOF,ENABLE);
+
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_All;
+  GPIO_Init(GPIOC, &GPIO_InitStructure);
+  GPIO_Init(GPIOD, &GPIO_InitStructure);
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
+  GPIO_Init(GPIOB, &GPIO_InitStructure);
+	GPIO_Init(GPIOF, &GPIO_InitStructure);
+	
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR, ENABLE);	//使能PWR外设时钟
+	PWR_WakeUpPinCmd(DISABLE);
+	PWR_EnterSTANDBYMode();	  //进入待命（STANDBY）模式
 	
 }
 
@@ -49,7 +73,7 @@ void EXTI0_IRQHandler(void)
 {
 	if (GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0))
 	{
-		SET_SYSTEM_STATUS(SYSTEM_STATUS_RUN);	
+		
 	}
 	EXTI_ClearITPendingBit(EXTI_Line0);
 }
@@ -72,7 +96,8 @@ void WKUP_Pin_Init(void)
 	
 
 
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO,ENABLE);      
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO,ENABLE);
+	
 	GPIO_EXTILineConfig(GPIO_PortSourceGPIOA,GPIO_PinSource0);
 
 	EXTI_InitStructure.EXTI_Line = EXTI_Line0; //PA0        

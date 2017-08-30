@@ -8,9 +8,9 @@
 #define BKP_DR4			最后一次报警时间，32位
 
 #define BKP_DR5			系统状态                           ((uint16_t)0x0014)
-#define BKP_DR6                           ((uint16_t)0x0018)
-#define BKP_DR7                           ((uint16_t)0x001C)
-#define BKP_DR8                           ((uint16_t)0x0020)
+#define BKP_DR6			                           ((uint16_t)0x0018)
+#define BKP_DR7			6,7存储下一次启动时间                           ((uint16_t)0x001C)
+#define BKP_DR8			静止超时状态                           ((uint16_t)0x0020)
 #define BKP_DR9                           ((uint16_t)0x0024)
 #define BKP_DR10                          ((uint16_t)0x0028)
 #define BKP_DR11                          ((uint16_t)0x0040)
@@ -52,6 +52,8 @@ unsigned int bkp32bit_read(unsigned short a , unsigned short b);
 void bkp32bit_write(unsigned int val , unsigned short *a , unsigned short *b);
 void __set_last_alarm_time(void);
 unsigned int __get_last_alarm_time(void);
+void __set_next_wakeup_time(unsigned int time);
+unsigned int __get_next_wakeup_time(void);
 
 
 #define GET_SYSTEM_COUNTER  BKP_ReadBackupRegister(BKP_DR2)
@@ -63,7 +65,25 @@ unsigned int __get_last_alarm_time(void);
 #define GET_SYSTEM_STATUS 	BKP_ReadBackupRegister(BKP_DR5)
 #define SET_SYSTEM_STATUS(X)		BKP_WriteBackupRegister(BKP_DR5,X)
 
+#define SET_NEXT_WAKEUP_TIME(X)	__set_next_wakeup_time(X)
+#define GET_NEXT_WAKEUP_TIME	__get_next_wakeup_time()
 
+#define GET_MOTIONLESS_STATUS	BKP_ReadBackupRegister(BKP_DR8)
+#define SET_MOTIONLESS_STATUS(X)	BKP_WriteBackupRegister(BKP_DR8,X)
+
+
+#pragma pack(push)
+#pragma  pack(1)
+struct BKP_REG {
+	unsigned char SYSTEM_RESET_COUNTE;
+	unsigned int LAST_ALARM_TIME;
+	unsigned int WAKE_UP_TIME;
+	unsigned char SYSTEM_STATUS;
+};
+#pragma pack(pop)
+
+void read_bkp_buffer(unsigned char*buf);
+void write_bkp_buffer(unsigned char*buf);
 
 #endif
 
