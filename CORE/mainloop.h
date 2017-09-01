@@ -4,7 +4,7 @@
 #include "setting.h"
 
 typedef enum {
-	SYS_INIT,
+	SYS_INIT = 0,
 	SYS_INIT2,
 	SYS_INIT3,
 	SYS_POWERON,
@@ -13,25 +13,18 @@ typedef enum {
 	MODEM_RESET,
 	MODEM_POWERACTIVE,
 	MODEM_POWERACTIVE_TESTAT,
-	
 	MODEM_GET_IMEI,
 	MODEM_ATD,
 	MODEM_CHECK_MODEM_TYPE,
-	
 	MODEM_POWERON,
-	
 	MODEM_CPIN,
-	
 	MODEM_CHECK_CSQ,
-	
 	MODEM_GPRS_READY,								//GPRS已经准备好
 	MODEM_GPRS_CGDCONT,
 	MODEM_GPRS_CGACT,
 	MODEM_GPRS_CGATT,
-	
 	MODEM_GPRS_MIPCALL_SUCCESS,			//进行网络注册
 	MODEM_GPRS_MIPOPEN_SUCCESS,			//创建SOCKET连接
-	
 	PROTO_CHECK_1091,
 	PROTO_SEND_ALARM,
 	PROTO_RECV_2091,
@@ -39,14 +32,18 @@ typedef enum {
 	PROTO_SEND_IMG,
 	PROTO_SEND_IMG_SUCCESS,
 	PROTO_SEND_IMG_ERROR,
-	
 	PROTO_UPLOAD_DONE_GOTO_SLEEP,
-	
 	PROTO_ALARM,
-	
 	MDATA_STATUS_NULL,
 	
 } SYSTEM_STATUS;
+
+struct STATUS_STR_ITEM {
+	char status;
+	char str[64];
+};
+
+extern const struct STATUS_STR_ITEM sstr_item[];
 
 enum {
 	DOING_10A0 = 0,
@@ -62,6 +59,7 @@ struct MAINLOOP_DATA {
 	//计数器
 	unsigned char modem_reset_cnt;			//模块重启计数器
 	unsigned char test_at_cnt;
+	unsigned char status_running_cnt;		//当前状态被执行了多少次
 	
 	unsigned char send_10a0_cnt;
 	

@@ -19,6 +19,67 @@
 
 #define MAINLOOP_STATUS_DELAY __time_100ms_cnt[TIMER_100MS_MAINLOOP_DELAY]
 
+#if 0
+SYS_INIT = 0,
+	SYS_INIT2,
+	SYS_INIT3,
+	SYS_POWERON,
+	SYS_POWEROFF,
+	MODEM_POWEROFF,
+	MODEM_RESET,
+	MODEM_POWERACTIVE,
+	MODEM_POWERACTIVE_TESTAT,
+	MODEM_GET_IMEI,
+	MODEM_ATD,
+	MODEM_CHECK_MODEM_TYPE,
+	MODEM_POWERON,
+	MODEM_CPIN,
+	MODEM_CHECK_CSQ,
+	MODEM_GPRS_READY,								//GPRS已经准备好
+	MODEM_GPRS_CGDCONT,
+	MODEM_GPRS_CGACT,
+	MODEM_GPRS_CGATT,
+	MODEM_GPRS_MIPCALL_SUCCESS,			//进行网络注册
+	MODEM_GPRS_MIPOPEN_SUCCESS,			//创建SOCKET连接
+	PROTO_CHECK_1091,
+	PROTO_SEND_ALARM,
+	PROTO_RECV_2091,
+	START_SEND_IMG,
+	PROTO_SEND_IMG,
+	PROTO_SEND_IMG_SUCCESS,
+	PROTO_SEND_IMG_ERROR,
+	PROTO_UPLOAD_DONE_GOTO_SLEEP,
+	PROTO_ALARM,
+	MDATA_STATUS_NULL,
+#endif
+
+const struct STATUS_STR_ITEM sstr_item[] = {
+	{MDATA_STATUS_NULL,"模块首次初始化\r\n"},
+	{SYS_INIT,"初始化\r\n"},
+	{SYS_POWERON,"启动模块\r\n"},
+	{MODEM_RESET,"重启模块\r\n"},
+	{MODEM_CHECK_CSQ,"获取CSQ\r\n"},
+	{MODEM_GPRS_CGDCONT,"设置CGDCONT\r\n"},
+	{MODEM_GPRS_CGACT,"附着GPRS\r\n"},
+	{MODEM_GPRS_CGATT,"查询GPRS\r\n"},
+	{PROTO_SEND_ALARM,"发送报警\r\n"},
+};
+
+static const char *get_status_str(unsigned char status)
+{
+	char i=0;
+	for(i=0;i<(sizeof(sstr_item)/sizeof(struct STATUS_STR_ITEM));i++)
+	{
+		if (sstr_item[i].status == status)
+		{
+			return sstr_item[i].str;
+		}
+		//
+	}
+	
+	return 0;
+}
+
 struct MAINLOOP_DATA mdata;
 
 static int push_1091(void);
@@ -36,32 +97,14 @@ static void status_master(unsigned char status , unsigned int time)
 	
 	if (status != __history_status)
 	{
-		printf("current status %d ---> %d \r\n",__history_status,status);
+		printf("状态跳转 %d:%s ---> %d:%s \r\n",__history_status,get_status_str(__history_status),status,get_status_str(status));
 		__history_status = status;
-		current_status_time_ms = (__time_100ms_cnt[TIMER_100MS_STATUS_MASTER]*100);
+		mdata.status_running_cnt = 0;
 		
 		//
 	}else{
-		//如果停留在这个状态超过时间段
-		if (((__time_100ms_cnt[TIMER_100MS_STATUS_MASTER]*100) - current_status_time_ms) > time)
-		{
-			printf("******************************************************\r\n");
-			printf("*               STATUS  ERROR!                       *\r\n");
-			printf("******************************************************\r\n");
-			
-			//当作一个看门狗来处理把
-			SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
-			Sys_Enter_Standby();
-			//
-		}else{
-			//TIMER_100MS_PRINTF_DELAY
-			//至少需要1000ms才能打印一条数据，防止打印的数据过多
-			if ((__time_100ms_cnt[TIMER_100MS_PRINTF_DELAY]*100) > 1000)
-			{
-				printf("\r\ncurrent status remaining time %d %d ms \r\n",status,(time - ((__time_100ms_cnt[TIMER_100MS_STATUS_MASTER]*100) - current_status_time_ms)));
-				__time_100ms_cnt[TIMER_100MS_PRINTF_DELAY] = 0;
-			}
-		}
+		mdata.status_running_cnt ++;
+		printf("状态 %d 被执行第 %d 次\r\n",status,mdata.status_running_cnt);
 	}
 	
 	
@@ -131,6 +174,9 @@ static void SYSINIT(void)
 						//如果是因为距离上次报警时间不够，那么重新更新上次报警时间
 						
 						SET_LAST_ALARM_TIME;
+						
+						SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
+						Sys_Enter_Standby();
 						
 						printf("进入长达 %d 秒的深度休眠\r\n",ALARM_MIN_TIME-10); // 留10秒的阈值
 						SET_NEXT_WAKEUP_TIME(CURRENT_RTC_TIM + ALARM_MIN_TIME);
@@ -203,12 +249,14 @@ void mainloop(void)
 	switch(mdata.status)
 	{
 		case SYS_INIT:
+			status_master(mdata.status,60*1000);
 			SYSINIT();
 			break;
 		
 		case MODEM_RESET:
 			status_master(mdata.status,60*1000);
-			printf("重启GPRS模块\r\n");
+		
+			printf("重启GPRS模块,当前第 %d 次重启\r\n",mdata.modem_reset_cnt);
 		
 			//将一些关键计数器清零
 			mdata.modem_reset_cnt ++;
@@ -288,6 +336,7 @@ void mainloop(void)
 		}
 
 		case MODEM_ATD:
+			status_master(mdata.status,60*1000);
 			break;
 		case MODEM_GET_IMEI:
 		{
@@ -321,7 +370,12 @@ void mainloop(void)
 				mdata.status = MODEM_CHECK_CSQ;
 				
 			}else{
-				printf("检查SIM卡失败r\n");
+				printf("检查SIM卡失败,重启模组\r\n");
+				
+				if (mdata.status_running_cnt > 5)
+					mdata.status = MODEM_RESET;
+				else
+					utimer_sleep(1000); //等待1s后再次执行
 			}
 			break;
 		}
@@ -365,6 +419,12 @@ void mainloop(void)
 			if (ret == 0)
 			{
 				mdata.status = MODEM_GPRS_CGATT;
+			}else{
+				printf("激活GPRS CGACT 失败\r\n");
+				if (mdata.status_running_cnt > 5)
+					mdata.status = MODEM_RESET;
+				else
+					utimer_sleep(1000); //等待1s后再次执行
 			}
 			break;
 		}
@@ -377,6 +437,12 @@ void mainloop(void)
 			if (ret == 0)
 			{
 				mdata.status = MODEM_GPRS_MIPCALL_SUCCESS;
+			}else{
+				printf("查询激活GPRS CGATT 失败\r\n");
+				if (mdata.status_running_cnt > 5)
+					mdata.status = MODEM_RESET;
+				else
+					utimer_sleep(1000); //等待1s后再次执行
 			}
 			break;
 		}
@@ -385,8 +451,12 @@ void mainloop(void)
 		{
 			
 			int ret;
-			char *tmpstr = (char*)alloc_mem(__FILE__,__LINE__,1024); 
+			char *tmpstr;
+			status_master(mdata.status,60*1000);
+			
+			tmpstr = (char*)alloc_mem(__FILE__,__LINE__,1024); 
 			tmpstr[0] = 0x0;
+			
 			ret = at_cmd_wait_str_str("AT+CIPHEAD=1\r\n","OK","OK",100);
 			snprintf(tmpstr,1024,"AT+CIPSTART=\"UDP\",\"%s\",%d\r\n",SERVER_ADDR,SERVER_PORT);
 			//AT+CIPHEAD=
@@ -398,6 +468,11 @@ void mainloop(void)
 				mdata.status = MODEM_GPRS_MIPOPEN_SUCCESS;
 				printf("SERVER链接成功\r\n");
 			}else{
+				printf("SERVER 链接失败\r\n");
+				if (mdata.status_running_cnt > 2)
+					mdata.status = MODEM_RESET;
+				else
+					utimer_sleep(1000); //等待1s后再次执行
 			}
 			
 			break;
@@ -415,26 +490,11 @@ void mainloop(void)
 		
 			if (push_10A0(mdata._10a0type) < 0)
 			{
-				//如果没发送成功超过3次，则重启
-				mdata.send_10a0_cnt ++ ;
-				
-				if (mdata.send_10a0_cnt > 3)
+				printf("发送10A0 失败\r\n");
+				if (mdata.status_running_cnt > 5)
 				{
-					mdata.send_10a0_cnt = 0;
-					
-					//如果模块重启三次仍然没有成功，则进入休眠
-					if (mdata.modem_reset_cnt < 3)
-					{
-						mdata.status = MODEM_RESET;
-						
-					}else{
-						printf("重启超过三次了，进入休眠\r\n");
-						
-						SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
-						Sys_Enter_Standby();
-					}
+					mdata.status = MODEM_RESET;
 				}
-				
 			}else{
 				
 				//
@@ -448,12 +508,13 @@ void mainloop(void)
 			break;
 		case PROTO_CHECK_1091:
 		{
-			
+			status_master(mdata.status,60*1000);
 			break;
 		}
 		
 		case START_SEND_IMG:
 		{
+			status_master(mdata.status,60*1000);
 			init_push_img();
 			set_img_data();
 			update_message_id();
@@ -573,6 +634,7 @@ void mainloop(void)
 		
 			break;
 		case PROTO_ALARM:
+			status_master(mdata.status,60*1000);
 			break;
 		default:
 			status_master(mdata.status,60*1000);
