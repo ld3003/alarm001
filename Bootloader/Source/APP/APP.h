@@ -19,7 +19,7 @@
 #ifndef _APP_H_
 #define _APP_H_
 
-
+void write_usb_buffer(unsigned char*buf , int len);
 
 
 #endif

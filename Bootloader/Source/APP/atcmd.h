@@ -33,5 +33,6 @@ extern unsigned char status_recv;
 
 void uart_recv_handle(unsigned char data);		/// 串口中断调用此函数，用于处理接收到的串口数据
 void atcmd_recv_reset(void);									/// 缓冲区复位函数
+void process_cmddata(void);
 
 #endif

@@ -1,5 +1,7 @@
 #include "bkpreg.h"
 #include <stm32f10x.h>
+#include <stm32f10x_bkp.h>
+#include <stm32f10x_rtc.h>
 
 unsigned int bkp32bit_read(unsigned short a , unsigned short b)
 {

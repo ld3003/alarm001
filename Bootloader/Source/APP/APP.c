@@ -132,4 +132,17 @@ int fputc(int ch, FILE *f)
 	return (ch);
 }
 
+////////
+
+void write_usb_buffer(unsigned char*buf , int len)
+{
+	int i;
+	for(i=0;i<len;i++)
+	{
+		EnQueue(&UartRingQueue,buf[i]);
+	}
+}
+
+
+
 

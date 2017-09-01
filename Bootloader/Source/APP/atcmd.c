@@ -1,6 +1,7 @@
 #include "atcmd.h"
 #include <stdio.h>
 #include <BSP_Uart.h>
+#include <APP.h>
 
 unsigned char recvbuf[UART_RECV_BUFFER_LEN];
 int recvbuffer_length = 0;
@@ -47,14 +48,48 @@ void uart_recv_handle(unsigned char data)
 			int i=0;
 			printf("数据长度 %d\r\n",recvbuffer_length);
 			printf("数据内容 %s\r\n",recvbuf);
-			for(i=0;i<recvbuffer_length;i++)
-			{
-				EnQueue(&UartRingQueue,recvbuf[i]);
-			}
+			
+			process_cmddata();
 			
 			break;
 		}
 		
+	}
+	//
+}
+
+#include <string.h>
+void process_cmddata(void)
+{
+	int retcode = -1;
+	
+	if      (strstr((char*)recvbuf,"+WRITEDATA=") == (char*)recvbuf)
+	{
+		retcode = 0;
+		//
+	}
+	else if (strstr((char*)recvbuf,"+HITTEST") == (char*)recvbuf)
+	{
+		retcode = 0;
+		//
+	}
+	else if (strstr((char*)recvbuf,"+AT") == (char*)recvbuf)
+	{
+		retcode = 0;
+		//
+	}
+	
+	
+	
+	if (retcode >= 0)
+	{
+		char tmpbuf[32];
+		snprintf(tmpbuf,32,"OK:%d\r\n",retcode);
+		write_usb_buffer((unsigned char*)tmpbuf,strlen(tmpbuf));
+	}else{
+		char tmpbuf[32];
+		snprintf(tmpbuf,32,"ERROR:%d\r\n",retcode);
+		write_usb_buffer((unsigned char*)tmpbuf,strlen(tmpbuf));
 	}
 	//
 }
