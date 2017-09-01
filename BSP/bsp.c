@@ -1,6 +1,9 @@
 #include "bsp.h"
 #include <stm32f10x.h>
-
+#include <stm32f10x_gpio.h>
+#include <stm32f10x_usart.h>
+#include <stm32f10x_rcc.h>
+#include <misc.h>
 /*******************************************************************************
 * Function Name  : USART_Configuration
 * Description    : Configure USART1 
@@ -219,6 +222,27 @@ void led_ctrl(unsigned char index , unsigned char status)
 
 void setfrq(unsigned char mod)
 {
+	//
+}
+
+int read_usb_status(void)
+{
+	
+	GPIO_InitTypeDef GPIO_InitStructure;
+
+  RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOA , ENABLE); 						 
+  /**
+  *  LED1 -> PF6 , LED2 -> PF7 , LED3 -> PF8 , LED4 -> PF9
+  */					 
+  GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_11|GPIO_Pin_12;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; 
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
+	
+	printf("PIN 11: %d\r\n",GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_11));
+	printf("PIN 12: %d\r\n",GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_12));
+	
+	return GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_11);
 	//
 }
 

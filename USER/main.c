@@ -70,7 +70,7 @@ int main(void)
 	
 	printf("(当前时间[%d]最后一次报警时间[%d]\r\n",CURRENT_RTC_TIM,GET_LAST_ALARM_TIME);
 	
-	led0_on();
+	led0_off();
 	
 	init_uart2_buffer();
 	

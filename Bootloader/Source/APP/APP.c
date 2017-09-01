@@ -19,13 +19,14 @@
 #include <stdio.h>
 
 #include "APP.h"
-#include "BSP.h"
+
 #include "BSP_tim.h"
 #include "BSP_Uart.h"
 
 #include "HW_Config.h"
 
 #include "atcmd.h"
+#include "bsp.h"
 
 unsigned char fputcmod = 0;
 
@@ -34,16 +35,6 @@ unsigned char fputcmod = 0;
 
 static void process_atcmd(void);
 static void process_usbdata(void);
-
-void LedHandler(void)
-{
-    IO_TOGGLE(eLED_0);
-}
-
-void Led2Handler(void)
-{
-    IO_TOGGLE(eLED_0);
-}
 
 
 /*******************************************************************************
@@ -56,21 +47,46 @@ void Led2Handler(void)
 *******************************************************************************/
 int main(void)
 {
-		SysTickInit();
-    BSP_Init();
-		BSP_UART1Config(115200);
-    USB_Config();
+
+	/*systick init*/
+	RCC_ClocksTypeDef rccClk = {0};
+	RCC_GetClocksFreq(&rccClk);
+	SysTick_Config(rccClk.HCLK_Frequency / 100);
 	
-		SERIALPORT;
-		printf("系统初始化完成\r\n");
+	/*Uart1 INIT*/
+	BSP_UART1Config(115200);
 	
-    while (1)
-    {
-			//处理USB 数据
-			process_usbdata();
-			//处理串口AT数据
-			process_atcmd();	
-    }
+	if (read_usb_status() == 0)
+	{
+		printf("USB 线缆已经插入 !\r\n");
+		//
+	}else{
+		printf("USB 线未插入 !\r\n");
+	}
+
+	/*
+			读取 USB状态，判断是否进入bootloader模式
+
+			判断标记位
+			如果APP正常启动，则jump
+			如果APP未正常启动，则打开指示灯
+	*/
+
+	//printf("USB PIN STATUS %d %d \r\n",BSP_GpioRead(USB_DM_PIN),BSP_GpioRead(USB_DP_PIN));
+
+	//for(;;){};
+
+	USB_Config();
+
+	printf("系统初始化完成\r\n");
+
+	while (1)
+	{
+		//处理USB 数据
+		process_usbdata();
+		//处理串口AT数据
+		process_atcmd();	
+	}
 }
 
 static void process_atcmd(void)

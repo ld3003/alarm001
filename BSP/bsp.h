@@ -47,6 +47,8 @@ void led_ctrl(unsigned char index , unsigned char status);
 
 void setfrq(unsigned char mod);
 
+int read_usb_status(void);
+
 
 #endif
 
