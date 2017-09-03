@@ -20,7 +20,7 @@
 #define _APP_H_
 
 void write_usb_buffer(unsigned char*buf , int len);
-
+void gotoApp(void);
 
 #endif
 

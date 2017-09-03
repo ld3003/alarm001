@@ -132,10 +132,26 @@ void PendSV_Handler(void)
   * @param  None
   * @retval None
   */
+#include "bsp.h"
 void SysTick_Handler(void)
 {
-		static unsigned char TimingDelay = 0;
-  TimingDelay++; 
+	static unsigned char LED0TIM = 0;
+	static unsigned char TimingDelay = 0;
+	
+	#if 0
+	LED0TIM ++;
+	if (LED0TIM == 50)
+	{
+		led0_off();
+	}
+	if (LED0TIM == 100)
+	{
+		led0_on();
+		LED0TIM = 0;
+	}
+	#endif
+	
+	TimingDelay++; 
 }
 
 

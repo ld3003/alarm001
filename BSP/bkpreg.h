@@ -11,7 +11,7 @@
 #define BKP_DR6			                           ((uint16_t)0x0018)
 #define BKP_DR7			6,7存储下一次启动时间                           ((uint16_t)0x001C)
 #define BKP_DR8			静止超时状态                           ((uint16_t)0x0020)
-#define BKP_DR9                           ((uint16_t)0x0024)
+#define BKP_DR9			BOOTLOADER 状态                           ((uint16_t)0x0024)
 #define BKP_DR10                          ((uint16_t)0x0028)
 #define BKP_DR11                          ((uint16_t)0x0040)
 #define BKP_DR12                          ((uint16_t)0x0044)
@@ -70,6 +70,10 @@ unsigned int __get_next_wakeup_time(void);
 
 #define GET_MOTIONLESS_STATUS	BKP_ReadBackupRegister(BKP_DR8)
 #define SET_MOTIONLESS_STATUS(X)	BKP_WriteBackupRegister(BKP_DR8,X)
+
+//BKP_DR9
+#define GET_BOOTLOADER_STATUS	BKP_ReadBackupRegister(BKP_DR9)
+#define SET_BOOTLOADER_STATUS(X)	BKP_WriteBackupRegister(BKP_DR9,X)
 
 
 #pragma pack(push)

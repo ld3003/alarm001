@@ -27,6 +27,10 @@
 
 #include "atcmd.h"
 #include "bsp.h"
+#include "mem.h"
+#include "flash.h"
+#include "rtc.h"
+#include <stdlib.h>
 
 unsigned char fputcmod = 0;
 
@@ -53,8 +57,30 @@ int main(void)
 	RCC_GetClocksFreq(&rccClk);
 	SysTick_Config(rccClk.HCLK_Frequency / 100);
 	
+	RTC_Init();
+	
+	init_mem();
+	
 	/*Uart1 INIT*/
 	BSP_UART1Config(115200);
+	
+	printf("\r\n*");
+	printf("\r\n*");
+	printf("\r\n*");
+	printf("\r\n*");
+	printf("\r\n*");
+	printf("\r\n*");
+	printf("\r\n*");
+	printf("\r\n*");
+	printf("\r\n*");
+	printf("\r\n*");
+	printf("\r\nBootloader [%s %s]\r\n",__DATE__,__TIME__);
+	printf("\r\n");
+	printf("\r\n");
+	
+
+	
+
 	
 	if (read_usb_status() == 0)
 	{
@@ -62,12 +88,15 @@ int main(void)
 		//
 	}else{
 		printf("USB 线未插入 !\r\n");
+		
+		gotoApp();
+		
 	}
 
 	/*
 			读取 USB状态，判断是否进入bootloader模式
 
-			判断标记位
+			判断标记位 
 			如果APP正常启动，则jump
 			如果APP未正常启动，则打开指示灯
 	*/
@@ -157,6 +186,27 @@ void write_usb_buffer(unsigned char*buf , int len)
 	{
 		EnQueue(&UartRingQueue,buf[i]);
 	}
+}
+
+
+typedef  void (*pFunction)(void);
+static void JumpToApp(u32 appAddr)				
+{
+	pFunction JumpToApplication;
+	u32 JumpAddress;
+	
+	//appAddr = CPU2_FW_ADDRESS;
+	
+	JumpAddress = *(u32*) (appAddr + 4);
+	JumpToApplication = (pFunction)JumpAddress;
+  /* Initialize user application's Stack Pointer */
+  __set_MSP(*(vu32*) appAddr);
+  JumpToApplication();
+}
+void gotoApp(void)
+{
+	JumpToApp(APPLICATION_ADDRESS);
+	//
 }
 
 

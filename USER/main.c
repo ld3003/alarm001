@@ -44,6 +44,15 @@ int main(void)
 	init_uart2();
 	RTC_Init();
 	
+	if (read_usb_status() == 0)
+	{
+		printf("USB 线缆已经插入 !\r\n");
+		for(;;){};
+		//
+	}else{
+		printf("USB 线未插入 !\r\n");
+	}
+	
 	
 	
 //	{

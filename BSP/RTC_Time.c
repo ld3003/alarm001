@@ -102,6 +102,8 @@
 #include <stm32f10x_bkp.h>
 #include <stm32f10x_pwr.h>
 #include <stm32f10x_rtc.h>
+#include <stm32f10x_rcc.h>
+#include "misc.h"
 
 /* Private define ------------------------------------------------------------*/
 //#define RTCClockOutput_Enable  /* RTC Clock/64 is output on tamper pin(PC.13) */  
@@ -288,34 +290,6 @@ static uint16_t USART_Scanf(uint32_t min_value,uint32_t max_value,uint8_t lenght
   uint16_t index = 0;
   uint32_t tmp[4] = {0, 0, 0, 0};
 
-  while (index < lenght)
-  {
-    /* Loop until RXNE = 1 */
-    while (USART_GetFlagStatus(USART1, USART_FLAG_RXNE) == RESET)
-    {}
-    tmp[index++] = (USART_ReceiveData(USART1));
-
-	if( tmp[index - 1] == 0x0D ) { index--; continue; }
-
-    if ((tmp[index - 1] < 0x30) || (tmp[index - 1] > 0x39))
-    {
-      printf("Please enter valid number between 0 and 9\r\n");
-      index--;
-    }
-  }
-  /* Calculate the Corresponding value */
-  if( lenght ==2 )
-  index = (tmp[1] - 0x30) + ((tmp[0] - 0x30) * 10 );
-
-  else  /* lenght ==4 */
-  index = (tmp[3] - 0x30) + ((tmp[2] - 0x30) * 10 ) + ((tmp[1] - 0x30) * 100 ) + ((tmp[0] - 0x30) * 1000 );
-  /* Checks */
-  if (index > max_value || index < min_value)
-  {
-	printf("Please enter valid number between %d and %d\r\n", min_value, max_value);
-    return 0;
-  }
-
 
   return index;
 }
@@ -389,6 +363,7 @@ void Time_Regulate(void)
 * Return         : None
 * Attention		 : None	
 *******************************************************************************/
+
 
 
 static void RTC_NVIC_Config(void)

@@ -197,12 +197,16 @@ void led0_off(void)
   /**
   *  LED1 -> PF6 , LED2 -> PF7 , LED3 -> PF8 , LED4 -> PF9
   */					 
-  GPIO_InitStructure.GPIO_Pin =  OV_POEWR_PIN;
+  GPIO_InitStructure.GPIO_Pin =  LED0_PIN;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 
   GPIO_Init(OV_POEWR_GPIO, &GPIO_InitStructure);
 	
 	GPIO_ResetBits(LED0_GPIO,LED0_PIN);
+}
+
+void led0_fanzhuan(void)
+{
 }
 
 void rtc_init(void)
@@ -239,8 +243,8 @@ int read_usb_status(void)
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; 
   GPIO_Init(GPIOA, &GPIO_InitStructure);
 	
-	printf("PIN 11: %d\r\n",GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_11));
-	printf("PIN 12: %d\r\n",GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_12));
+	//printf("PIN 11: %d\r\n",GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_11));
+	//printf("PIN 12: %d\r\n",GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_12));
 	
 	return GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_11);
 	//

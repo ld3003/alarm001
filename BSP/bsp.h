@@ -41,6 +41,7 @@ void ov_poweroff(void);
 
 void led0_on(void);
 void led0_off(void);
+void led0_fanzhuan(void);
 
 
 void led_ctrl(unsigned char index , unsigned char status);
