@@ -30,6 +30,8 @@
 #include "mem.h"
 #include "flash.h"
 #include "rtc.h"
+#include "bkpreg.h"
+
 #include <stdlib.h>
 
 unsigned char fputcmod = 0;
@@ -51,7 +53,8 @@ static void process_usbdata(void);
 *******************************************************************************/
 int main(void)
 {
-
+	unsigned char runapp_status = 0; 
+		
 	/*systick init*/
 	RCC_ClocksTypeDef rccClk = {0};
 	RCC_GetClocksFreq(&rccClk);
@@ -63,6 +66,10 @@ int main(void)
 	
 	/*Uart1 INIT*/
 	BSP_UART1Config(115200);
+	
+	//启动看门狗
+	
+	watch_dog_config();
 	
 	printf("\r\n*");
 	printf("\r\n*");
@@ -78,21 +85,30 @@ int main(void)
 	printf("\r\n");
 	printf("\r\n");
 	
-
-	
-
+	printf("Bootloader 状态 %d \r\n",GET_BOOTLOADER_STATUS);
 	
 	if (read_usb_status() == 0)
 	{
-		printf("USB 线缆已经插入 !\r\n");
+		runapp_status ++;
+		printf("USB 线缆已经插入 , 进入Bootloader配置模式 !\r\n");
 		//
 	}else{
+		
 		printf("USB 线未插入 !\r\n");
 		
-		gotoApp();
-		
 	}
+	
+	if (GET_BOOTLOADER_STATUS == 1)
+	{
+		runapp_status ++;
+	}
+	
+	//运行APP
+	if (runapp_status == 0){gotoApp();};
 
+	//进入Bootload模式
+	SET_BOOTLOADER_STATUS(0);
+	
 	/*
 			读取 USB状态，判断是否进入bootloader模式
 
@@ -111,6 +127,8 @@ int main(void)
 
 	while (1)
 	{
+		//喂狗操作
+		feed_watchdog();
 		//处理USB 数据
 		process_usbdata();
 		//处理串口AT数据
@@ -205,6 +223,8 @@ static void JumpToApp(u32 appAddr)
 }
 void gotoApp(void)
 {
+	printf("设置为启动APP状态\r\n");
+	SET_BOOTLOADER_STATUS(1);
 	JumpToApp(APPLICATION_ADDRESS);
 	//
 }

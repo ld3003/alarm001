@@ -1,6 +1,9 @@
 #ifndef __bkpreg_h__
 #define __bkpreg_h__
 
+#include <stm32f10x_bkp.h>
+#include <stm32f10x_rtc.h>
+
 /*
 #define BKP_DR1			RTC 初始化记录
 #define BKP_DR2			系统重启计数器
@@ -71,7 +74,11 @@ unsigned int __get_next_wakeup_time(void);
 #define GET_MOTIONLESS_STATUS	BKP_ReadBackupRegister(BKP_DR8)
 #define SET_MOTIONLESS_STATUS(X)	BKP_WriteBackupRegister(BKP_DR8,X)
 
-//BKP_DR9
+/*
+	BKP_DR9
+	记录BOOTLOADER状态，每次启动APP之前设置为1，APP成功运行设置为2，如果bootloader中检测到
+	重复为1那么说明APP执行失败，也就是固件下载错误，一般是直接进入配置模式
+*/	
 #define GET_BOOTLOADER_STATUS	BKP_ReadBackupRegister(BKP_DR9)
 #define SET_BOOTLOADER_STATUS(X)	BKP_WriteBackupRegister(BKP_DR9,X)
 
