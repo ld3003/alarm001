@@ -24,6 +24,7 @@
 #include "stm32f10x_it.h"
 #include "utimer.h"
 #include "serialport.h"
+#include "common.h"
 
 /** @addtogroup STM32F10x_StdPeriph_Template
   * @{

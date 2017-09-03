@@ -104,6 +104,7 @@
 #include <stm32f10x_rtc.h>
 #include <stm32f10x_rcc.h>
 #include "misc.h"
+#include "common.h"
 
 /* Private define ------------------------------------------------------------*/
 //#define RTCClockOutput_Enable  /* RTC Clock/64 is output on tamper pin(PC.13) */  

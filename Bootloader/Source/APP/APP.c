@@ -31,10 +31,8 @@
 #include "flash.h"
 #include "rtc.h"
 #include "bkpreg.h"
-
+#include "common.h"
 #include <stdlib.h>
-
-unsigned char fputcmod = 0;
 
 #define SERIALPORT		fputcmod = 0;
 #define USBPORT				fputcmod = 1;
@@ -207,15 +205,10 @@ static void process_usbdata(void)
 
 int fputc(int ch, FILE *f)
 {
-	unsigned char tmp = (char)ch;
-	if (fputcmod == 1)
-		USB_TxWrite(&tmp,1);
-	else
-	{
-		USART_SendData(USART1, tmp);
-    while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET)
-    {}
-	}
+	
+	USART_SendData(USART1, ch);
+	while (USART_GetFlagStatus(USART1, USART_FLAG_TC) == RESET)
+	{}
 	return (ch);
 }
 

@@ -8,6 +8,7 @@
 
 #include <string.h>
 #include <mem.h>
+#include "common.h"
 
 unsigned char recvbuf[UART_RECV_BUFFER_LEN];
 int recvbuffer_length = 0;
