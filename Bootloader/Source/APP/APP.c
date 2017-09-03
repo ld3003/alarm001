@@ -41,6 +41,8 @@ unsigned char fputcmod = 0;
 
 static void process_atcmd(void);
 static void process_usbdata(void);
+static void bootloader(void);
+static void checkusb(void);
 
 
 /*******************************************************************************
@@ -53,23 +55,64 @@ static void process_usbdata(void);
 *******************************************************************************/
 int main(void)
 {
-	unsigned char runapp_status = 0; 
-		
-	/*systick init*/
 	RCC_ClocksTypeDef rccClk = {0};
+	unsigned char runapp_status = 0; 
+	
+	watch_dog_config();
+	
+	/*RCC SYSTICK RTC 初始化*/
 	RCC_GetClocksFreq(&rccClk);
 	SysTick_Config(rccClk.HCLK_Frequency / 100);
-	
 	RTC_Init();
+	
+	switch(GET_BOOTLOADER_STATUS)
+	{
+		case 3:
+			gotoApp();
+			break;
+		case 2:
+			checkusb();
+			break;
+		case 1:
+			//固件运行失败直接进入bootloader状态
+		case 0:
+			bootloader();
+			break;
+	}
+	
+	SET_BOOTLOADER_STATUS(0);NVIC_SystemReset();
+	
+	
+}
+static void checkusb(void)
+{
+	init_mem();
+	
+	/*Uart1 INIT*/
+	BSP_UART1Config(115200);
+	
+	if (read_usb_status() == 0)
+	{
+		printf("USB 线缆已经插入 , 进入Bootloader配置模式 !\r\n");
+		SET_BOOTLOADER_STATUS(0);NVIC_SystemReset();
+		//
+	}else{
+		
+		printf("USB 线未插入 !\r\n");
+		SET_BOOTLOADER_STATUS(3);NVIC_SystemReset();
+		
+	}
+}
+static void bootloader(void)
+{
+	
+	
 	
 	init_mem();
 	
 	/*Uart1 INIT*/
 	BSP_UART1Config(115200);
 	
-	//启动看门狗
-	
-	watch_dog_config();
 	
 	printf("\r\n*");
 	printf("\r\n*");
@@ -87,28 +130,6 @@ int main(void)
 	
 	printf("Bootloader 状态 %d \r\n",GET_BOOTLOADER_STATUS);
 	
-	if (read_usb_status() == 0)
-	{
-		runapp_status ++;
-		printf("USB 线缆已经插入 , 进入Bootloader配置模式 !\r\n");
-		//
-	}else{
-		
-		printf("USB 线未插入 !\r\n");
-		
-	}
-	
-	if (GET_BOOTLOADER_STATUS == 1)
-	{
-		runapp_status ++;
-	}
-	
-	//运行APP
-	if (runapp_status == 0){gotoApp();};
-
-	//进入Bootload模式
-	SET_BOOTLOADER_STATUS(0);
-	
 	/*
 			读取 USB状态，判断是否进入bootloader模式
 
@@ -124,6 +145,9 @@ int main(void)
 	USB_Config();
 
 	printf("系统初始化完成\r\n");
+	
+	//设置下次直接进入检测USB的状态
+	SET_BOOTLOADER_STATUS(2);
 
 	while (1)
 	{
@@ -223,7 +247,7 @@ static void JumpToApp(u32 appAddr)
 }
 void gotoApp(void)
 {
-	printf("设置为启动APP状态\r\n");
+	//printf("设置为启动APP状态\r\n");
 	SET_BOOTLOADER_STATUS(1);
 	JumpToApp(APPLICATION_ADDRESS);
 	//

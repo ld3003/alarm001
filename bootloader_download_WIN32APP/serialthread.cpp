@@ -28,16 +28,13 @@ SerialThread::SerialThread(QObject *parent):QThread(parent)
 void SerialThread::run()
 {
 
+    char finddev_flag = 0;
     QByteArray tmpArray;
 
 #if 1
 
     serialport = new QSerialPort(0);
 
-    //init
-    //m_burnState = SerialThread::__INIT;
-
-    //QSerialPortInfo com_info;
     foreach (const QSerialPortInfo &info, QSerialPortInfo::availablePorts())
     {
         qDebug() << "串口序号:" << info.serialNumber() << "串口名:" << info.portName();
@@ -67,24 +64,26 @@ void SerialThread::run()
 
                 if (strstr(tmpArray.data(),"OK") == tmpArray.data())
                 {
-                    serialInfoStr("成功发现设备!");
+                    finddev_flag ++;
+                    serialInfoStr("成功找到可用设备！");
                     burnFW();
-
-
-
                 }
             }
 
             serialport->close();
         }else{
-            serialInfoStr("打开串口失败!");
+
         }
     }
 
     serialport->deleteLater();
 
+    if (finddev_flag == 0)
+    {
+        serialInfoStr("没有发现任何有效设备连接到本机!");
+    }
+
 #endif
-    serialInfoStr("操作结束,释放线程资源!");
 
 
 

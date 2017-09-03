@@ -85,8 +85,11 @@ int main(void)
 	
 	init_uart2_buffer();
 	
+	/*
+	RUN_TEST;
 	mem = (struct MEM_DATA *)malloc(sizeof(struct MEM_DATA));
 	read_config();
+	*/
 	
 	for(;;){feed_watchdog();mainloop();}
 	
