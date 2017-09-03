@@ -26,6 +26,8 @@ private slots:
     void timeoutUiTimer();
     void serialInfoRecv(QString str);
 
+    void on_checkConn_clicked();
+
 private:
     Ui::USBTest *ui;
     SerialThread *m_serialThread;

@@ -35,7 +35,7 @@ void SerialThread::run()
     serialport = new QSerialPort(0);
 
     //init
-    m_burnState = SerialThread::__INIT;
+    //m_burnState = SerialThread::__INIT;
 
     //QSerialPortInfo com_info;
     foreach (const QSerialPortInfo &info, QSerialPortInfo::availablePorts())
@@ -67,13 +67,7 @@ void SerialThread::run()
 
                 if (strstr(tmpArray.data(),"OK") == tmpArray.data())
                 {
-                    serialInfoStr("发现串口!");
-                    //开始写入固件
-                    serialInfoStr("开始烧录固件!");
-
-                    //加载固件文件
-                    loadFW();
-                    //烧录固件文件
+                    serialInfoStr("成功发现设备!");
                     burnFW();
 
 
@@ -102,9 +96,15 @@ void SerialThread::burnFW()
     {
         switch(m_burnState)
         {
+        case SerialThread::__CHECK_DEV:
+            return;
+            break;
         case SerialThread::__INIT:
         {
             QByteArray serialRcvArray;
+            //加载固件文件
+            loadFW();
+
             serialport->write(QByteArray("+STARTBURN\r\n"));
             serialport->waitForReadyRead(1000);
             serialRcvArray = serialport->readAll();

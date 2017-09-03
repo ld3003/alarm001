@@ -27,10 +27,11 @@ protected:
 signals:
     void serialInfoStr(QString str);
 
-private:
+public:
     enum {
         __INIT,
         __INIT2,
+        __CHECK_DEV,
         __BURNERR,
         __BURNHEX,
         __BURNSUCCESS,

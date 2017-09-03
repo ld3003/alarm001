@@ -238,12 +238,12 @@ int read_usb_status(void)
   /**
   *  LED1 -> PF6 , LED2 -> PF7 , LED3 -> PF8 , LED4 -> PF9
   */					 
-  GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_11|GPIO_Pin_12;
+  GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_11;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; 
   GPIO_Init(GPIOA, &GPIO_InitStructure);
 	
-	//printf("PIN 11: %d\r\n",GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_11));
+	printf("PIN 11: %d\r\n",GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_11));
 	//printf("PIN 12: %d\r\n",GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_12));
 	
 	return GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_11);

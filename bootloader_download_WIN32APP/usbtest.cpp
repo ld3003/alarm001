@@ -34,6 +34,7 @@ void USBTest::on_connectDevButton_clicked()
         QString path = fileDialog->selectedFiles()[0];
         QMessageBox::information(NULL, tr("提示"), tr("您将要下载的固件文件为: ") + path);
         m_serialThread->m_fwFilePath = path;
+        m_serialThread->m_burnState = SerialThread::__INIT;
         m_serialThread->start();
     } else {
         QMessageBox::information(NULL, tr("提示"), tr("您没有选择任何文件。"));
@@ -51,4 +52,11 @@ void USBTest::timeoutUiTimer()
 void USBTest::serialInfoRecv(QString str)
 {
     ui->textBrowser->append(str);
+}
+
+void USBTest::on_checkConn_clicked()
+{
+    m_serialThread->m_burnState = SerialThread::__CHECK_DEV;
+    m_serialThread->start();
+    //
 }

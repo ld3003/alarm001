@@ -113,7 +113,7 @@ void process_cmddata(void)
 	}
 	else if (strstr((char*)recvbuf,"+APP") == (char*)recvbuf)
 	{
-		gotoApp();
+		//gotoApp();
 		retcode = 0;
 		//
 	}

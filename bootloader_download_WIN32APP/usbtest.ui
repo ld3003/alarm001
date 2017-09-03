@@ -11,10 +11,17 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>USBTest</string>
+   <string>固件烧录程序</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
+    <item>
+     <widget class="QPushButton" name="checkConn">
+      <property name="text">
+       <string>检查设备是否连接</string>
+      </property>
+     </widget>
+    </item>
     <item>
      <widget class="QPushButton" name="connectDevButton">
       <property name="text">
@@ -27,16 +34,6 @@
     </item>
    </layout>
   </widget>
-  <widget class="QMenuBar" name="menuBar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>400</width>
-     <height>23</height>
-    </rect>
-   </property>
-  </widget>
   <widget class="QToolBar" name="mainToolBar">
    <attribute name="toolBarArea">
     <enum>TopToolBarArea</enum>
@@ -45,7 +42,6 @@
     <bool>false</bool>
    </attribute>
   </widget>
-  <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
