@@ -3,6 +3,7 @@
 
 extern unsigned short gsm_signal;
 extern char IMEI_CODE[16];
+extern unsigned int GSM_LAC,GSM_CI;
 
 enum {
 	AT_RESP_OK = 0,

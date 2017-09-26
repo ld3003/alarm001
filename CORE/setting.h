@@ -22,7 +22,7 @@
 //服务器信息 
 //#define SERVER_ADDR								"52.80.4.27"
 //#define SERVER_PORT								29100
-#define SERVER_ADDR							"easy-iot.cc"
+#define SERVER_ADDR							"47.93.103.232"
 #define SERVER_PORT							29100
 
 //拍照上传配置

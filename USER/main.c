@@ -37,6 +37,8 @@
 int main(void)
 {
 	
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO,ENABLE);
+	GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable,ENABLE);
 	
 	SysTick_Config(SystemCoreClock / 100);
 	watch_dog_config();
@@ -46,15 +48,6 @@ int main(void)
 	
 	//设置APP已经进入启动
 	SET_BOOTLOADER_STATUS(2);
-	
-	if (read_usb_status() == 0)
-	{
-		printf("USB 线缆已经插入 !\r\n");
-		//
-	}else{
-		printf("USB 线未插入 !\r\n");
-	}
-	
 	
 	
 //	{
@@ -81,7 +74,8 @@ int main(void)
 	
 	printf("(当前时间[%d]最后一次报警时间[%d]\r\n",CURRENT_RTC_TIM,GET_LAST_ALARM_TIME);
 	
-	led0_off();
+	//led0_off();
+	//for(;;){}
 	
 	init_uart2_buffer();
 	

@@ -120,7 +120,7 @@ void modem_poweron(void)
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 
   GPIO_Init(MODEM_POEWR_GPIO, &GPIO_InitStructure);
 	
-	GPIO_SetBits(MODEM_POEWR_GPIO,MODEM_POEWR_PIN);
+	GPIO_ResetBits(MODEM_POEWR_GPIO,MODEM_POEWR_PIN);
 	//
 }
 void modem_poweroff(void)
@@ -133,10 +133,10 @@ void modem_poweroff(void)
   */					 
   GPIO_InitStructure.GPIO_Pin =  MODEM_POEWR_PIN;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN; 
   GPIO_Init(MODEM_POEWR_GPIO, &GPIO_InitStructure);
 	
-	GPIO_ResetBits(MODEM_POEWR_GPIO,MODEM_POEWR_PIN);
+	//GPIO_ResetBits(MODEM_POEWR_GPIO,MODEM_POEWR_PIN);
 	//
 }
 
@@ -199,10 +199,10 @@ void led0_off(void)
   */					 
   GPIO_InitStructure.GPIO_Pin =  LED0_PIN;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 
-  GPIO_Init(OV_POEWR_GPIO, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN; 
+  GPIO_Init(LED0_GPIO, &GPIO_InitStructure);
 	
-	GPIO_ResetBits(LED0_GPIO,LED0_PIN);
+	//GPIO_ResetBits(LED0_GPIO,LED0_PIN);
 }
 
 void led0_fanzhuan(void)

@@ -253,6 +253,11 @@ int make_0x10A0(unsigned char *data , c_u16 alarmtype , c_u32 alarmnum , c_u32 a
 		body.alarmtype = alarmtype;
 		transfer16((c_u16*)&body.alarmtype);
 		
+		body.gsm_lac = GSM_LAC;
+		body.gsm_ci = GSM_CI;
+		
+		transfer32(&body.gsm_lac);
+		transfer32(&body.gsm_ci);
 		
 		for(i = sizeof(struct UDP_PROTO_HDR);i<sizeof(body);i++)
     {

@@ -12,6 +12,7 @@
 #define AT_PROCESS_DELAY __time_100ms_cnt[TIMER_100MS_AT_PROCESS_DELAY]
 
 unsigned short gsm_signal = 0;
+unsigned int GSM_LAC,GSM_CI;
 
 int at_cmd_wait(char *at , int(*at_cb)(char*resp,int resplen) , int(*at_wait)(char*resp,int resplen) , int timeout)
 {
@@ -241,9 +242,39 @@ int AT_GSN(char *resp , int len)
 
 int AT_CGREG(char *resp , int len)
 {
-	if (strstr(resp,"+CGREG: 2,1") || strstr(resp,"+CGREG: 2,5"))
+	if (strstr(resp,"+CGREG: 2,1,") || strstr(resp,"+CGREG: 2,5,"))
 	{
+		
+		char *p1;
+		char *p2;
+		char *p3;
+		char *p4;
+		
+		GSM_LAC = 0;
+		GSM_CI = 0;
+		
+		p1 = strstr(resp,"\"");
+		p2 = strstr(p1+1,"\"");
+		p3 = strstr(p2+1,"\"");
+		p4 = strstr(p3+1,"\"");
+		
+		if ((p4>p3)&(p3>p2)&(p2>p1)){
+			p2[0] = 0x0;
+			p4[0] = 0x0;
+			printf("PARSE CGREG LAC %s \r\n",p1+1);
+			printf("PARSE CGREG CI  %s \r\n",p3+1);
+			
+			sscanf(p1+1,"%x",&GSM_LAC);
+			sscanf(p3+1,"%x",&GSM_CI);
+			
+			printf("LAC: %x CI: %x \r\n",GSM_LAC,GSM_CI);
+			
+		}else{
+			printf("PARSE CGREG ERRPR \r\n");
+		}
+		
 		return AT_RESP_CGREGOK;
+		
 	}
 	else{
 		return AT_RESP_CGREGNOTREADY;
@@ -365,7 +396,7 @@ int AT_CMMUX(char *resp , int len)
 
 int AT_IPSTART(char *resp , int len)
 {
-	if (strstr(resp,"OK") && strstr(resp,"BIND OK"))
+	if (strstr(resp,"CONNECT") || strstr(resp,"OK"))
 	{
 		return AT_RESP_OK;
 	}else{
@@ -404,11 +435,17 @@ int AT_MIPPUSH_WAIT(char *resp , int len)
 
 int AT_WAIT(char *resp , int len)
 {
-	char *tmp;
-	tmp = strstr(resp,"OK");
+	char *tmp1,*tmp2,*tmp;
+	tmp1 = strstr(resp,"OK");
+	tmp2 = strstr(resp,"ERROR");
 	//+MIPRUDP: 183.131.17.185,29100,1,0,209000207F00001A000100010001000010910000000000000000
-	if(tmp > 0)
+	if((tmp1 > 0) || (tmp2>0))
 	{
+		if (tmp1>0)
+			tmp = tmp1;
+		else if (tmp2>0)
+			tmp = tmp2;
+		
 		if (strstr(tmp,"\r\n"))
 		{
 			return 1;

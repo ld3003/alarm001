@@ -104,6 +104,8 @@ struct UDP_PROTO_10A0_DATA {
 	c_u16 alarmtype;
 	c_u32 alarmnum;
 	c_u32 alarmtime;
+	c_u32 gsm_lac;
+	c_u32 gsm_ci;
 };
 
 struct UDP_PROTO_20A0_DATA {

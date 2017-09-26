@@ -2082,13 +2082,6 @@ void readimgx(void)
 	
 	//debugbuf
 	
-	for(i=0;i<JpegDataCnt;i++)
-	{
-		//printf("%02x",JpegBuffer[i]);
-		printf("%d",GetBit(JpegBuffer[i],3));
-	}
-	printf("\r\n");
-	
 	if ((JpegBuffer[0] == 0xFF) && (JpegBuffer[1] == 0xD8))
 	{
 		//

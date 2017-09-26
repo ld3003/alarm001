@@ -50,6 +50,8 @@ void setfrq(unsigned char mod);
 
 int read_usb_status(void);
 
+#define ENABLE_USB			led0_on()
+#define DISABLE_USB			led0_off()
 
 #endif
 

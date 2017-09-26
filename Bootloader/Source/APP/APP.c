@@ -56,6 +56,10 @@ int main(void)
 	RCC_ClocksTypeDef rccClk = {0};
 	unsigned char runapp_status = 0; 
 	
+	//关闭 SWD 调试
+	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO,ENABLE);
+	GPIO_PinRemapConfig(GPIO_Remap_SWJ_JTAGDisable,ENABLE);
+	
 	watch_dog_config();
 	
 	/*RCC SYSTICK RTC 初始化*/
@@ -139,13 +143,15 @@ static void bootloader(void)
 	//printf("USB PIN STATUS %d %d \r\n",BSP_GpioRead(USB_DM_PIN),BSP_GpioRead(USB_DP_PIN));
 
 	//for(;;){};
+	
+	ENABLE_USB;
 
 	USB_Config();
-
-	printf("系统初始化完成\r\n");
 	
 	//设置下次直接进入检测USB的状态
 	SET_BOOTLOADER_STATUS(2);
+	
+	printf("Bootloader 正常运行 ……r\n");
 
 	while (1)
 	{

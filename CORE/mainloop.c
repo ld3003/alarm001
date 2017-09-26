@@ -39,6 +39,7 @@ SYS_INIT = 0,
 	MODEM_GPRS_CGDCONT,
 	MODEM_GPRS_CGACT,
 	MODEM_GPRS_CGATT,
+	MODEM_GPRS_CGREG,
 	MODEM_GPRS_MIPCALL_SUCCESS,			//进行网络注册
 	MODEM_GPRS_MIPOPEN_SUCCESS,			//创建SOCKET连接
 	PROTO_CHECK_1091,
@@ -62,6 +63,7 @@ const struct STATUS_STR_ITEM sstr_item[] = {
 	{MODEM_GPRS_CGDCONT,"设置CGDCONT\r\n"},
 	{MODEM_GPRS_CGACT,"附着GPRS\r\n"},
 	{MODEM_GPRS_CGATT,"查询GPRS\r\n"},
+	{MODEM_GPRS_CGREG,"查询基站信息\r\n"},
 	{PROTO_SEND_ALARM,"发送报警\r\n"},
 };
 
@@ -250,7 +252,16 @@ void mainloop(void)
 	{
 		case SYS_INIT:
 			status_master(mdata.status,60*1000);
+		
+			#if 1
+			mdata.doing = DOING_10A0;
+			mdata._10a0type = 1;
+			mdata.status = MODEM_POWEROFF;
+			#else
 			SYSINIT();
+			#endif
+			
+		
 			break;
 		
 		case MODEM_RESET:
@@ -436,7 +447,7 @@ void mainloop(void)
 			ret = at_cmd_wait_str_str("AT+CGATT=1\r\n","OK","OK",5000);
 			if (ret == 0)
 			{
-				mdata.status = MODEM_GPRS_MIPCALL_SUCCESS;
+				mdata.status = MODEM_GPRS_CGREG;
 			}else{
 				printf("查询激活GPRS CGATT 失败\r\n");
 				if (mdata.status_running_cnt > 5)
@@ -445,6 +456,17 @@ void mainloop(void)
 					utimer_sleep(1000); //等待1s后再次执行
 			}
 			break;
+		}
+		
+		case MODEM_GPRS_CGREG:
+		{
+			int ret;
+			status_master(mdata.status,60*1000);
+			at_cmd_wait_str_str("AT+CGREG=2\r\n","OK","OK",5000);
+			at_cmd_wait_str("AT+CGREG?\r\n",AT_CGREG,"OK",5000);
+			mdata.status = MODEM_GPRS_MIPCALL_SUCCESS;
+			break;
+			
 		}
 		
 		case MODEM_GPRS_MIPCALL_SUCCESS:
@@ -460,7 +482,7 @@ void mainloop(void)
 			ret = at_cmd_wait_str_str("AT+CIPHEAD=1\r\n","OK","OK",100);
 			snprintf(tmpstr,1024,"AT+CIPSTART=\"UDP\",\"%s\",%d\r\n",SERVER_ADDR,SERVER_PORT);
 			//AT+CIPHEAD=
-			ret = at_cmd_wait_str_str(tmpstr,"CONNECT","OK",10000);
+			ret = at_cmd_wait(tmpstr,AT_IPSTART,AT_WAIT,10000);
 			free_mem(__FILE__,__LINE__,(unsigned char *)tmpstr);
 
 			if(ret == 0)
