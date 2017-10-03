@@ -27,6 +27,17 @@
 #define LED0_GPIO				GPIOA
 #define LED0_PIN				GPIO_Pin_15
 
+#define USBEN_RCC_TYPE		RCC_APB2PeriphClockCmd
+#define USBEN_RCC				RCC_APB2Periph_GPIOC
+#define USBEN_GPIO				GPIOC
+#define USBEN_PIN				GPIO_Pin_14
+
+
+#define CHECK_USB_RCC_TYPE		RCC_APB2PeriphClockCmd
+#define CHECK_USB_RCC					RCC_APB2Periph_GPIOB
+#define CHECK_USB_GPIO				GPIOB
+#define CHECK_USB_PIN					GPIO_Pin_9
+
 void init_uart1(void);
 void init_uart2(void);
 
@@ -43,6 +54,9 @@ void led0_on(void);
 void led0_off(void);
 void led0_fanzhuan(void);
 
+void usben_on(void);
+void usben_off(void);
+
 
 void led_ctrl(unsigned char index , unsigned char status);
 
@@ -50,8 +64,8 @@ void setfrq(unsigned char mod);
 
 int read_usb_status(void);
 
-#define ENABLE_USB			led0_on()
-#define DISABLE_USB			led0_off()
+#define ENABLE_USB			usben_on()
+#define DISABLE_USB			usben_off()
 
 #endif
 

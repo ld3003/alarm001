@@ -37,5 +37,8 @@
 #define POWERUP_MIN_TIME					0 //开机沉默时间
 #define ALARM_MIN_TIME						60
 
+#define MOTIONLESS_TIME					120
+#define MOTION_ALARM_TIME				60
+
 #endif
 

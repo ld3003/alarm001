@@ -199,8 +199,40 @@ void led0_off(void)
   */					 
   GPIO_InitStructure.GPIO_Pin =  LED0_PIN;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN; 
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 
   GPIO_Init(LED0_GPIO, &GPIO_InitStructure);
+
+	GPIO_ResetBits(LED0_GPIO,LED0_PIN);
+}
+
+void usben_on(void)
+{
+	GPIO_InitTypeDef GPIO_InitStructure;
+
+  USBEN_RCC_TYPE( USBEN_RCC , ENABLE); 						 
+  /**
+  *  LED1 -> PF6 , LED2 -> PF7 , LED3 -> PF8 , LED4 -> PF9
+  */					 
+  GPIO_InitStructure.GPIO_Pin =  USBEN_PIN;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 
+  GPIO_Init(USBEN_GPIO, &GPIO_InitStructure);
+	
+	GPIO_SetBits(USBEN_GPIO,USBEN_PIN);
+	
+}
+void usben_off(void)
+{
+	GPIO_InitTypeDef GPIO_InitStructure;
+
+  USBEN_RCC_TYPE( USBEN_RCC , ENABLE); 						 
+  /**
+  *  LED1 -> PF6 , LED2 -> PF7 , LED3 -> PF8 , LED4 -> PF9
+  */					 
+  GPIO_InitStructure.GPIO_Pin =  USBEN_PIN;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AIN; 
+  GPIO_Init(USBEN_GPIO, &GPIO_InitStructure);
 	
 	//GPIO_ResetBits(LED0_GPIO,LED0_PIN);
 }
@@ -234,19 +266,19 @@ int read_usb_status(void)
 	
 	GPIO_InitTypeDef GPIO_InitStructure;
 
-  RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOA , ENABLE); 						 
+  CHECK_USB_RCC_TYPE( CHECK_USB_RCC , ENABLE); 						 
   /**
   *  LED1 -> PF6 , LED2 -> PF7 , LED3 -> PF8 , LED4 -> PF9
   */					 
-  GPIO_InitStructure.GPIO_Pin =  GPIO_Pin_11;
+  GPIO_InitStructure.GPIO_Pin =  CHECK_USB_PIN;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU; 
-  GPIO_Init(GPIOA, &GPIO_InitStructure);
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING; 
+  GPIO_Init(CHECK_USB_GPIO, &GPIO_InitStructure);
 	
-	printf("PIN 11: %d\r\n",GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_11));
+	//printf("PIN 11: %d\r\n",GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_11));
 	//printf("PIN 12: %d\r\n",GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_12));
 	
-	return GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_11);
+	return GPIO_ReadInputDataBit(CHECK_USB_GPIO,CHECK_USB_PIN);
 	//
 }
 

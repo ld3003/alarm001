@@ -37,6 +37,7 @@ typedef enum {
 	PROTO_ALARM,
 	MDATA_STATUS_NULL,
 	
+	
 } SYSTEM_STATUS;
 
 struct STATUS_STR_ITEM {

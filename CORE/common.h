@@ -37,5 +37,7 @@ int SYSCFG_ReInt(void);
 
 extern unsigned char __setbuffer(void);
 
+#define ENABLE_WAKEUP_DBG
+
 
 #endif

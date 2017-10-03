@@ -40,7 +40,6 @@
 static void process_atcmd(void);
 static void process_usbdata(void);
 static void bootloader(void);
-static void checkusb(void);
 
 
 /*******************************************************************************
@@ -53,8 +52,10 @@ static void checkusb(void);
 *******************************************************************************/
 int main(void)
 {
+	
 	RCC_ClocksTypeDef rccClk = {0};
 	unsigned char runapp_status = 0; 
+	
 	
 	//关闭 SWD 调试
 	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO,ENABLE);
@@ -62,51 +63,40 @@ int main(void)
 	
 	watch_dog_config();
 	
+	led0_off();
+	
+	
 	/*RCC SYSTICK RTC 初始化*/
 	RCC_GetClocksFreq(&rccClk);
 	SysTick_Config(rccClk.HCLK_Frequency / 100);
 	RTC_Init();
 	
+	#ifdef ENABLE_WAKEUP_DBG
+	BSP_UART1Config(115200);
+	printf("Wakeup Bootloader 状态 %d \r\n",GET_BOOTLOADER_STATUS);
+	#endif
+	
 	switch(GET_BOOTLOADER_STATUS)
 	{
-		case 3:
-			gotoApp();
-			break;
-		case 2:
-			checkusb();
-			break;
-		case 1:
-			//固件运行失败直接进入bootloader状态
 		case 0:
+			//固件运行失败直接进入bootloader状态
 			bootloader();
 			break;
+		default:
+			gotoApp();
 	}
-	
-	SET_BOOTLOADER_STATUS(0);NVIC_SystemReset();
 	
 	
 }
-static void checkusb(void)
-{
-	init_mem();
-	
-	/*Uart1 INIT*/
-	BSP_UART1Config(115200);
-	
-	if (read_usb_status() == 0)
-	{
-		printf("USB 线缆已经插入 , 进入Bootloader配置模式 !\r\n");
-		SET_BOOTLOADER_STATUS(0);NVIC_SystemReset();
-		//
-	}else{
-		
-		printf("USB 线未插入 !\r\n");
-		SET_BOOTLOADER_STATUS(3);NVIC_SystemReset();
-		
-	}
-}
+
 static void bootloader(void)
 {
+	
+	//led0_on();
+	extern unsigned int SysTickCnt;
+	unsigned int SysTickCntRecord;
+	unsigned int tmpCnt;
+	int i=0;
 	
 	
 	
@@ -130,28 +120,33 @@ static void bootloader(void)
 	printf("\r\n");
 	printf("\r\n");
 	
-	printf("Bootloader 状态 %d \r\n",GET_BOOTLOADER_STATUS);
+	printf("Bootloader STATUS %d \r\n",GET_BOOTLOADER_STATUS);
 	
-	/*
-			读取 USB状态，判断是否进入bootloader模式
-
-			判断标记位 
-			如果APP正常启动，则jump
-			如果APP未正常启动，则打开指示灯
-	*/
-
-	//printf("USB PIN STATUS %d %d \r\n",BSP_GpioRead(USB_DM_PIN),BSP_GpioRead(USB_DP_PIN));
-
-	//for(;;){};
 	
+	printf("CheckUSB @ 10 Second...\r\n");
+	SysTickCntRecord = SysTickCnt;
+	for(;;)
+	{
+		if ((SysTickCnt - SysTickCntRecord) > (100*10))
+		{
+			printf("USB 线未插入 !\r\n");
+			gotoApp();
+		}
+		if (read_usb_status() == 1)
+		{
+			printf("USB 线缆已经插入 , 进入Bootloader配置模式 !\r\n");
+			break;
+		}
+	}
+	
+	
+	led0_on();
 	ENABLE_USB;
 
 	USB_Config();
 	
 	//设置下次直接进入检测USB的状态
 	SET_BOOTLOADER_STATUS(2);
-	
-	printf("Bootloader 正常运行 ……r\n");
 
 	while (1)
 	{
@@ -251,7 +246,6 @@ void gotoApp(void)
 	JumpToApp(APPLICATION_ADDRESS);
 	//
 }
-
 
 
 

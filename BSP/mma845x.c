@@ -27,7 +27,7 @@
 #define m_define_value_ctl_reg_2  0x01
 #define m_define_value_ctl_reg_3_interrupt_high 0x02
 #define m_define_value_ctl_reg_4_trans_mode 0x20
-#define m_define_value_ctl_reg_5_pin2 0xFF
+#define m_define_value_ctl_reg_5_pin2 0x00
 
 #define m_define_value_how_much_byte_1 1
 #define m_define_value_setting 0x24
@@ -162,7 +162,7 @@ char init_mma845x(void)
 	}
 	else
 	{
-		printf("Init MMA8452Q Failed ! \r\n");
+		printf("Init MMA8452Q Failed [%d]! \r\n",I2C_Erorr_Count);
 		return 0;
 	}
 	

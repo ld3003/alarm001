@@ -55,16 +55,16 @@ SYS_INIT = 0,
 #endif
 
 const struct STATUS_STR_ITEM sstr_item[] = {
-	{MDATA_STATUS_NULL,"模块首次初始化\r\n"},
-	{SYS_INIT,"初始化\r\n"},
-	{SYS_POWERON,"启动模块\r\n"},
-	{MODEM_RESET,"重启模块\r\n"},
-	{MODEM_CHECK_CSQ,"获取CSQ\r\n"},
-	{MODEM_GPRS_CGDCONT,"设置CGDCONT\r\n"},
-	{MODEM_GPRS_CGACT,"附着GPRS\r\n"},
-	{MODEM_GPRS_CGATT,"查询GPRS\r\n"},
-	{MODEM_GPRS_CGREG,"查询基站信息\r\n"},
-	{PROTO_SEND_ALARM,"发送报警\r\n"},
+	{MDATA_STATUS_NULL,"模块首次初始化"},
+	{SYS_INIT,"初始化"},
+	{SYS_POWERON,"启动模块"},
+	{MODEM_RESET,"重启模块"},
+	{MODEM_CHECK_CSQ,"获取CSQ"},
+	{MODEM_GPRS_CGDCONT,"设置CGDCONT"},
+	{MODEM_GPRS_CGACT,"附着GPRS"},
+	{MODEM_GPRS_CGATT,"查询GPRS"},
+	{MODEM_GPRS_CGREG,"查询基站信息"},
+	{PROTO_SEND_ALARM,"发送报警"},
 };
 
 static const char *get_status_str(unsigned char status)
@@ -121,125 +121,129 @@ void mainloop_init(void)
 
 static void SYSINIT(void)
 {
+	
 	switch(GET_SYSTEM_STATUS)
-		{
-			case SYSTEM_STATUS_INIT:
-				IOI2C_Init();
-				init_mma845x();
+	{
+		case SYSTEM_STATUS_INIT:
+			IOI2C_Init();
+			init_mma845x();
+			SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
+			Sys_Enter_Standby();
 			
-				//如果当前的RTC小于60那么不进入报警规则
-				if (CURRENT_RTC_TIM < POWERUP_MIN_TIME)
-				{
-					
-					printf("当前开机时间小于%d秒\r\n",POWERUP_MIN_TIME);
-					printf("进入长达 %d 秒的深度休眠\r\n",POWERUP_MIN_TIME - CURRENT_RTC_TIM);
-					SET_NEXT_WAKEUP_TIME(CURRENT_RTC_TIM + POWERUP_MIN_TIME);
-					SET_SYSTEM_STATUS(SYSTEM_STATUS_DEEPSLEEP);
-					Sys_Enter_DeepStandby();
-					
-				}
+			break;
+		case SYSTEM_STATUS_DEEPSLEEP:
 			
+			if (CURRENT_RTC_TIM > GET_NEXT_WAKEUP_TIME)
+			{
+				#ifdef __WAKEUP_DBUG
+				printf("退出深度休眠，进入普通休眠\r\n");
+				#endif
+				
 				SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
 				Sys_Enter_Standby();
 				
-				break;
-			case SYSTEM_STATUS_DEEPSLEEP:
+			}else{
+				#ifdef __WAKEUP_DBUG
+				printf("深度休眠中...\r\n");
+				#endif
+				Sys_Enter_DeepStandby();
+			}
+			break;
+		case SYSTEM_STATUS_WAIT_WAKEUP:
+		{
+			
+			//被唤醒了
+			
+			if (GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0))
+			{
+				//被外部中断唤醒
+
 				
-				if (CURRENT_RTC_TIM > GET_NEXT_WAKEUP_TIME)
+				//如果两次报警间隔不小于 120 则不进入报警
+				if ((CURRENT_RTC_TIM - GET_LAST_ALARM_TIME) < ALARM_MIN_TIME)
 				{
-					printf("退出深度休眠，进入普通休眠\r\n");
+				
+					#ifdef __WAKEUP_DBUG
+					printf("报警间隔小于%d秒，当前时间 [%d] 最后一次报警时间 [%d]\r\n",ALARM_MIN_TIME,CURRENT_RTC_TIM,GET_LAST_ALARM_TIME);
+					#endif
+					
+					//如果是因为距离上次报警时间不够，那么重新更新上次报警时间
+					
+					SET_LAST_ALARM_TIME;
 					
 					SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
 					Sys_Enter_Standby();
 					
-				}else{
-					printf("深度休眠中...\r\n");
+					#ifdef __WAKEUP_DBUG
+					printf("进入长达 %d 秒的深度休眠\r\n",ALARM_MIN_TIME / 2); // 留一半时间的阈值
+					#endif
+					
+					SET_NEXT_WAKEUP_TIME(CURRENT_RTC_TIM + ALARM_MIN_TIME);
+					SET_SYSTEM_STATUS(SYSTEM_STATUS_DEEPSLEEP);
 					Sys_Enter_DeepStandby();
+					
+				}else{
+					
+					#ifdef __WAKEUP_DBUG
+					printf("进入报警状态，清空静止报警标记位\r\n");
+					#endif
+					
+					SET_MOTIONLESS_STATUS(0);
+					
+					mdata.doing = DOING_10A0;
+					mdata._10a0type = 0;
+					
+					mdata.status = MODEM_POWEROFF;
+					
+					SET_LAST_ALARM_TIME;
+					
+					goto exit_standby;
 				}
-				break;
-			case SYSTEM_STATUS_WAIT_WAKEUP:
-			{
+			}else{
+				//看门狗唤醒 / 定期唤醒
 				
-				//被唤醒了
-				
-				if (GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0))
+				if (GET_MOTIONLESS_STATUS == 0)
 				{
-					//被外部中断唤醒
-
 					
-					//如果两次报警间隔不小于 120 则不进入报警
-					if ((CURRENT_RTC_TIM - GET_LAST_ALARM_TIME) < ALARM_MIN_TIME)
+					if ((CURRENT_RTC_TIM - GET_LAST_ALARM_TIME) > MOTIONLESS_TIME)
 					{
-					
-						printf("报警间隔小于%d秒，当前时间 [%d] 最后一次报警时间 [%d]\r\n",ALARM_MIN_TIME,CURRENT_RTC_TIM,GET_LAST_ALARM_TIME);
+						mdata.doing = DOING_10A0;
+						mdata._10a0type = 1;
+						mdata.status = MODEM_POWEROFF;
 						
-						//如果是因为距离上次报警时间不够，那么重新更新上次报警时间
+						SET_MOTIONLESS_STATUS(1);
 						
-						SET_LAST_ALARM_TIME;
-						
-						SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
-						Sys_Enter_Standby();
-						
-						printf("进入长达 %d 秒的深度休眠\r\n",ALARM_MIN_TIME-10); // 留10秒的阈值
-						SET_NEXT_WAKEUP_TIME(CURRENT_RTC_TIM + ALARM_MIN_TIME);
-						SET_SYSTEM_STATUS(SYSTEM_STATUS_DEEPSLEEP);
-						Sys_Enter_DeepStandby();
+						goto exit_standby;
 						
 					}else{
 						
-						printf("进入报警状态，清空静止报警标记位\r\n");
-						
-						SET_MOTIONLESS_STATUS(0);
-						
-						mdata.doing = DOING_10A0;
-						mdata._10a0type = 0;
-						
-						mdata.status = MODEM_POWEROFF;
-						
-						SET_LAST_ALARM_TIME;
-						
-						goto exit_standby;
+						#ifdef __WAKEUP_DBUG
+						printf("如果 %d 秒后 设备仍然静止，则触发静止报警 \r\n",(MOTIONLESS_TIME - (CURRENT_RTC_TIM - GET_LAST_ALARM_TIME)));
+						#endif
 					}
-				}else{
-					//看门狗唤醒 / 定期唤醒
-					
-					if (GET_MOTIONLESS_STATUS == 0)
-					{
-						
-						if ((CURRENT_RTC_TIM - GET_LAST_ALARM_TIME) > 120)
-						{
-							mdata.doing = DOING_10A0;
-							mdata._10a0type = 1;
-							mdata.status = MODEM_POWEROFF;
-							
-							SET_MOTIONLESS_STATUS(1);
-							
-							goto exit_standby;
-							
-						}else{
-							printf("如果 %d 秒后 设备仍然静止，则触发静止报警 \r\n",(120 - (CURRENT_RTC_TIM - GET_LAST_ALARM_TIME)));
-						}
-						
-					}
-					
-					printf("进入休眠...\r\n");
-					Sys_Enter_Standby();
 					
 				}
 				
-				break; 
+				#ifdef __WAKEUP_DBUG
+				printf("进入休眠...\r\n");
+				#endif
+				Sys_Enter_Standby();
+				
 			}
 			
-			case SYSTEM_STATUS_RUN:
-			
-				
-				
-				break;
+			break; 
 		}
 		
-		exit_standby:
-		printf("退出休眠\r\n");
-		return;
+		case SYSTEM_STATUS_RUN:
+		
+			
+			
+			break;
+	}
+	
+	exit_standby:
+	printf("退出休眠\r\n");
+	return;
 }
 
 void mainloop(void)
@@ -253,7 +257,9 @@ void mainloop(void)
 		case SYS_INIT:
 			status_master(mdata.status,60*1000);
 		
-			#if 1
+			#if 0
+			IOI2C_Init();
+			init_mma845x();
 			mdata.doing = DOING_10A0;
 			mdata._10a0type = 1;
 			mdata.status = MODEM_POWEROFF;
@@ -262,6 +268,27 @@ void mainloop(void)
 			#endif
 			
 		
+			break;
+		case SYS_POWEROFF:
+			
+			printf("任务处理完成，关机,进入休眠!\r\n");
+		
+			gprs_modem_power_off();
+		
+			printf("Delay 2000MS \r\n");
+			utimer_sleep(2000);
+		
+		
+		
+			IOI2C_Init();
+			init_mma845x();
+		
+			printf("Delay 2000MS \r\n");
+			utimer_sleep(2000);
+			
+			//关机进入休眠
+			SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
+			Sys_Enter_Standby();
 			break;
 		
 		case MODEM_RESET:
@@ -313,17 +340,17 @@ void mainloop(void)
 			status_master(mdata.status,60*1000);
 			
 			//通过向模块发送AT指令判断返回结果是否正确来判定模块是否已经正常启动了
-			
-			ret = at_cmd_wait("ATE0\r\n",AT_AT,0,AT_WAIT_LEVEL_2);
 			ret = at_cmd_wait("AT\r\n",AT_AT,0,AT_WAIT_LEVEL_2);
 			
 			mdata.test_at_cnt ++;
 			
 			if (ret == AT_RESP_OK)
 			{
+				ret = at_cmd_wait("ATE0\r\n",AT_AT,0,AT_WAIT_LEVEL_2);
+				
 				//模块AT指令返回正确，认为模块已经正常启动，进入下一个状态
 				printf("模块开机成功,休眠10秒让模块初始化完成\r\n");
-				utimer_sleep(10000);
+				utimer_sleep(5000);
 				mdata.status = MODEM_GET_IMEI;
 				
 			}else{
@@ -339,7 +366,7 @@ void mainloop(void)
 					printf("******************************************************\r\n");
 					//30秒后再启动
 					//__SET_NEXT_WAKEUP_TIM(26);
-					sys_shutdown();			
+					mdata.status = SYS_POWEROFF;
 					
 				}
 			}
@@ -521,8 +548,7 @@ void mainloop(void)
 				
 				//
 				printf("发送10a0数据成功\r\n");
-				SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
-				Sys_Enter_Standby();
+				mdata.status = SYS_POWEROFF;
 				
 				
 			}
@@ -587,7 +613,7 @@ void mainloop(void)
 			//如果模块重启了3次仍然没有重新上传，那么进入休眠
 			if (mdata.modem_reset_cnt > 3)
 			{
-				mdata.status = PROTO_UPLOAD_DONE_GOTO_SLEEP;
+				mdata.status = SYS_POWEROFF;
 				
 			}
 			
