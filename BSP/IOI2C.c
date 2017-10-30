@@ -71,12 +71,12 @@ void IOI2C_Init(void)
 	
 	GPIO_InitStructure.GPIO_Pin =  SDA_PORT_PIN; 
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD; 
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 
 	GPIO_Init(SDA_PORT, &GPIO_InitStructure); 
 	
 	GPIO_InitStructure.GPIO_Pin =  SCL_PORT_PIN; 
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz; 
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_OD; 
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 
 	GPIO_Init(SCL_PORT, &GPIO_InitStructure); 
 	
 }
@@ -86,7 +86,7 @@ static void SDAPortIN(void)
 	GPIO_InitTypeDef  GPIO_InitStructure;
 	GPIO_InitStructure.GPIO_Pin = SDA_PORT_PIN;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Mode =  GPIO_Mode_IN_FLOATING;         
+	GPIO_InitStructure.GPIO_Mode =  GPIO_Mode_IPU;         
 	GPIO_Init(SDA_PORT,&GPIO_InitStructure);
 }
 
@@ -95,7 +95,7 @@ static void SDAPortOUT(void)
 	GPIO_InitTypeDef  GPIO_InitStructure;
 	GPIO_InitStructure.GPIO_Pin = SDA_PORT_PIN;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-	GPIO_InitStructure.GPIO_Mode =  GPIO_Mode_Out_OD;         
+	GPIO_InitStructure.GPIO_Mode =  GPIO_Mode_Out_PP;         
 	GPIO_Init(SDA_PORT,&GPIO_InitStructure);
 }
 

@@ -143,9 +143,11 @@ void settime(c_u8 *buf , c_u32 year , c_u32 mon , c_u32 day , c_u32 hour , c_u32
 
 }
 
+#include <stm32f10x.h>
+#include "core_cm3.h"
 void sys_shutdown(void)
 {
-	//NVIC_SystemReset();
+	NVIC_SystemReset();
 }
 
 

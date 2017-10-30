@@ -15,8 +15,8 @@
 #define BKP_DR7			6,7存储下一次启动时间                           ((uint16_t)0x001C)
 #define BKP_DR8			静止超时状态                           ((uint16_t)0x0020)
 #define BKP_DR9			BOOTLOADER 状态                           ((uint16_t)0x0024)
-#define BKP_DR10                          ((uint16_t)0x0028)
-#define BKP_DR11                          ((uint16_t)0x0040)
+#define BKP_DR10		AUTOWAKEUP                          ((uint16_t)0x0028)
+#define BKP_DR11		AUTOWAKEUP                          ((uint16_t)0x0040)
 #define BKP_DR12                          ((uint16_t)0x0044)
 #define BKP_DR13                          ((uint16_t)0x0048)
 #define BKP_DR14                          ((uint16_t)0x004C)
@@ -82,6 +82,9 @@ unsigned int __get_next_wakeup_time(void);
 #define GET_BOOTLOADER_STATUS	BKP_ReadBackupRegister(BKP_DR9)
 #define SET_BOOTLOADER_STATUS(X)	BKP_WriteBackupRegister(BKP_DR9,X)
 
+#define SET_AUTOWAKEUP_TIM(X)		_set_auto_wakeup_tim(X)
+#define GET_AUTOWAKEUP_TIM		_get_auto_wakeup_tim()
+
 
 #pragma pack(push)
 #pragma  pack(1)
@@ -95,6 +98,9 @@ struct BKP_REG {
 
 void read_bkp_buffer(unsigned char*buf);
 void write_bkp_buffer(unsigned char*buf);
+
+void _set_auto_wakeup_tim(unsigned int time);
+unsigned int _get_auto_wakeup_tim(void);
 
 #endif
 

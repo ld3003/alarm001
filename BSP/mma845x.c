@@ -73,7 +73,16 @@ char init_mma845x(void)
 			m_define_value_ctl_reg_1_standby, 
 			m_define_value_how_much_byte_1, 
 			m_define_value_setting);
+	
+	
 
+	read_i2c_dev(m_define_device_address_read,
+			m_define_ctl_reg_1, 
+			m_define_value_ctl_reg_1_standby, 
+			m_define_value_how_much_byte_1, 
+			m_define_value_setting
+	
+	);
 
 	write_i2c_dev(m_define_device_address_write,
 			m_define_ctl_reg_2,
@@ -154,6 +163,11 @@ char init_mma845x(void)
 			m_define_value_setting);
 
 			
+	xxxvalue = 0;
+	//static void read_i2c_dev(u8 devid , u8 reg , u8 value , u8 num , u8 vs)
+	IICreadBytes(m_define_device_address_write,m_define_trans_threshold,1,&xxxvalue);
+	
+	printf("###########xxxvalue %d\r\n",xxxvalue);
 			
 	if (I2C_Erorr_Count == 0)
 	{
@@ -165,6 +179,9 @@ char init_mma845x(void)
 		printf("Init MMA8452Q Failed [%d]! \r\n",I2C_Erorr_Count);
 		return 0;
 	}
+	
+	
+
 	
 	
 

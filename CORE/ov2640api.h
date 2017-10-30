@@ -16,13 +16,14 @@ void ov2640_poweroff(void);							//关闭OV2640摄像头
 
 int ov2640_init(void);									//初始化OV2640摄像头,返回 0 代表成功，返回 -1代表失败
 
-void ov2640_read(void);							//拍照采集图像，采集后的图像存储于图片缓冲区中
+int ov2640_read(void);							//拍照采集图像，采集后的图像存储于图片缓冲区中
 
 void _config_mco(void);
 
 int read_photo_ov2640(int index);
 unsigned char* read_imgbuffer(int index  , int *imglen , unsigned int *paizhaotime);
-
+void __write_img_2_flash(int index , unsigned char *buffer , int buflen , unsigned int paizhaoshijian);
+unsigned char* read_imgbuffer(int index  , int *imglen , unsigned int *paizhaotime);
 
 /*
 example : 

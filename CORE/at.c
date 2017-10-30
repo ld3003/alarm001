@@ -25,7 +25,7 @@ int at_cmd_wait(char *at , int(*at_cb)(char*resp,int resplen) , int(*at_wait)(ch
 	//只有当AT指令有效的时候才会去发送
 	if (at > 0)
 	{
-		printf("--> %s",at);
+		printf("--> [TIM:%d] %s",AT_PROCESS_DELAY,at);
 		send_at(at);
 	}
 	
@@ -73,11 +73,12 @@ static int AT_WAIT_STR(char *resp , int len)
 static int AT_CHECK_STR(char *resp , int len)
 {
 	char *tmp;
+
 	tmp = strstr(resp,check_str);
 	//+MIPRUDP: 183.131.17.185,29100,1,0,209000207F00001A000100010001000010910000000000000000
 	if(tmp > 0)
 	{
-		
+
 		return AT_RESP_OK;
 		
 	}
@@ -96,7 +97,7 @@ int at_cmd_wait_str(char *at , int(*at_cb)(char*resp,int resplen) , char *waitst
 int at_cmd_wait_str_str(char *at , char *checkstr , char *waitstr , int timeout)
 {
 	snprintf(wait_str,sizeof(wait_str),"%s",waitstr);
-	snprintf(wait_str,sizeof(check_str),"%s",checkstr);
+	snprintf(check_str,sizeof(check_str),"%s",checkstr);
 	return at_cmd_wait(at,AT_CHECK_STR,AT_WAIT_STR,timeout);
 	//
 }

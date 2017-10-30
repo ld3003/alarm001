@@ -31,6 +31,7 @@
 #include "mem.h"
 #include "ir.h"
 #include <string.h>
+#include "flash.h"
 
 /** @addtogroup STM32F4xx_StdPeriph_Examples
   * @{
@@ -2003,11 +2004,12 @@ u32 JpegDataCnt = 0;
 
 extern void uart1_putchar(unsigned char data);
 
-void readimgx(void)
+int ov2640_read(void)
 {
 	
 	NVIC_InitTypeDef NVIC_InitStructure;
-
+	
+	int ret = 0;
 	unsigned char READSTATSUS = OV_READ_IMG_INTI;
 	short i = 0;
 	char paizhaocnt = 0;
@@ -2020,6 +2022,8 @@ void readimgx(void)
 	REREAD:
 	
 	paizhaocnt ++;
+	
+	if (paizhaocnt > 3){goto ERROR;}
 	
 	JpegDataCnt = 0;
 	READSTATSUS = OV_READ_IMG_INTI;
@@ -2111,7 +2115,10 @@ void readimgx(void)
 	//ENABLE_SYSTICK;
 	//ENABLE_IRQ;
 	
-	return;
+	
+	return JpegDataCnt;
+	ERROR:
+	return -1;
 	
 
 }
@@ -2177,11 +2184,6 @@ void ov2640_poweroff(void)
 }
 
 
-void ov2640_read(void)
-{
-	readimgx();
-}
-
 void _config_mco(void)
 {
 	
@@ -2222,6 +2224,78 @@ unsigned char check_ffd9(unsigned char *imgbuf , int imglen)
 
 	return ffd9flag;
 	
+}
+
+void __write_img_2_flash(int index , unsigned char *buffer , int buflen , unsigned int paizhaoshijian)
+{
+	
+	unsigned int program_address;
+	unsigned char hdr[] = {0xFA,0xFB,0xFC,0xFD};
+	
+	unsigned int paizhaotime = paizhaoshijian;//RTC_GetCounter();
+	
+	
+	if (buflen > (IMG_CACHE_SIZE - 8))
+	{
+		DEBUG_ERROR(buflen);
+		return;
+	}
+	
+	switch(index)
+	{
+		case 0:
+			program_address = IMG_CACHE_ADDR_0;
+			break;
+		case 1:
+			program_address = IMG_CACHE_ADDR_1;
+			break;
+		case 2:
+			program_address = IMG_CACHE_ADDR_2;
+			break;
+		default:
+			break;
+			
+	}
+	
+	FLASH_ProgramStart(program_address,IMG_CACHE_SIZE);
+	
+	FLASH_AppendBuffer(hdr,sizeof(hdr)); // paizhaotime
+	FLASH_AppendBuffer((unsigned char*)(&buflen),sizeof(buflen));
+	FLASH_AppendBuffer((unsigned char*)(&paizhaotime),sizeof(paizhaotime));
+	FLASH_AppendBuffer(buffer,buflen);
+	FLASH_AppendEnd();
+	FLASH_ProgramDone();
+	
+}
+
+unsigned char* read_imgbuffer(int index  , int *imglen , unsigned int *paizhaotime)
+{
+	unsigned int program_address;
+	switch(index)
+	{
+		case 0:
+			program_address = IMG_CACHE_ADDR_0;
+			break;
+		case 1:
+			program_address = IMG_CACHE_ADDR_1;
+			break;
+		case 2:
+			program_address = IMG_CACHE_ADDR_2;
+			break;
+		default:
+			break;
+			
+	}
+	
+	memcpy((unsigned char*)imglen , (unsigned char*)(program_address + 4),4);
+	memcpy((unsigned char*)paizhaotime , (unsigned char*)(program_address + 4 + 4),4);
+	
+	DEBUG_VALUE(*paizhaotime);
+	
+	//paizhaotime
+	return (unsigned char*)(program_address + 12);
+	
+	return 0x0;
 }
 
 

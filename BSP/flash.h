@@ -1,10 +1,6 @@
 #ifndef __flash_h__
 #define __flash_h__
 
-
-
-
-
 int program_flash(void); //对flash进行编程
 
 typedef unsigned int u32;
@@ -35,7 +31,7 @@ DEMO:
 #define CONFIG_DATA_SIZE 2048
 #define CONFIG_DATA_ADDR (0x8000000 + (FLASH_TOTAL_SIZE - CONFIG_DATA_SIZE))		//4的配置空间
 
-#define REG_SIZE	1024 //这个大小不能随意更改，改编后会改变映射地址
+#define REG_SIZE	1024
 #define REG_ADDR	(0x8000000 + (FLASH_TOTAL_SIZE - CONFIG_DATA_SIZE - REG_SIZE))  //1024字节
 
 #define IMG_CACHE_SIZE (1024*13)
@@ -44,7 +40,6 @@ DEMO:
 #define IMG_CACHE_ADDR_1	(0x8000000 + (FLASH_TOTAL_SIZE - CONFIG_DATA_SIZE - REG_SIZE - IMG_CACHE_TOTAL_SIZE + IMG_CACHE_SIZE)) //10K
 #define IMG_CACHE_ADDR_2	(0x8000000 + (FLASH_TOTAL_SIZE - CONFIG_DATA_SIZE - REG_SIZE - IMG_CACHE_TOTAL_SIZE + IMG_CACHE_SIZE + IMG_CACHE_SIZE)) //10K
 
-// TOTAL SIZE 1 + 1 + 24 = 26K
 
 
 /**************

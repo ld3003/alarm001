@@ -16,6 +16,7 @@
 #include "testpoint.h"
 #include "bsp.h"
 #include "main.h"
+#include "ov2640api.h"
 
 #define MAINLOOP_STATUS_DELAY __time_100ms_cnt[TIMER_100MS_MAINLOOP_DELAY]
 
@@ -55,16 +56,7 @@ SYS_INIT = 0,
 #endif
 
 const struct STATUS_STR_ITEM sstr_item[] = {
-	{MDATA_STATUS_NULL,"模块首次初始化"},
-	{SYS_INIT,"初始化"},
-	{SYS_POWERON,"启动模块"},
-	{MODEM_RESET,"重启模块"},
-	{MODEM_CHECK_CSQ,"获取CSQ"},
-	{MODEM_GPRS_CGDCONT,"设置CGDCONT"},
-	{MODEM_GPRS_CGACT,"附着GPRS"},
-	{MODEM_GPRS_CGATT,"查询GPRS"},
-	{MODEM_GPRS_CGREG,"查询基站信息"},
-	{PROTO_SEND_ALARM,"发送报警"},
+	{1,"XXX"},
 };
 
 static const char *get_status_str(unsigned char status)
@@ -89,6 +81,7 @@ static int push_10A0(c_u16 alarmtype);
 static int push_img_routing(void);
 static void init_push_img(void);
 static void set_img_data(void);
+static int process_1091pkg(unsigned char *rbuffer , int recvlen , unsigned short seq);
 
 static void status_master(unsigned char status , unsigned int time)
 {
@@ -99,14 +92,14 @@ static void status_master(unsigned char status , unsigned int time)
 	
 	if (status != __history_status)
 	{
-		printf("状态跳转 %d:%s ---> %d:%s \r\n",__history_status,get_status_str(__history_status),status,get_status_str(status));
+		//printf("状态跳转 %d:%s ---> %d:%s \r\n",__history_status,get_status_str(__history_status),status,get_status_str(status));
 		__history_status = status;
 		mdata.status_running_cnt = 0;
 		
 		//
 	}else{
 		mdata.status_running_cnt ++;
-		printf("状态 %d 被执行第 %d 次\r\n",status,mdata.status_running_cnt);
+		//printf("状态 %d 被执行第 %d 次\r\n",status,mdata.status_running_cnt);
 	}
 	
 	
@@ -125,9 +118,11 @@ static void SYSINIT(void)
 	switch(GET_SYSTEM_STATUS)
 	{
 		case SYSTEM_STATUS_INIT:
+			
+			//初始化，初始化之后休眠
 			IOI2C_Init();
 			init_mma845x();
-			SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
+			SET_SYSTEM_STATUS(SYSTEM_STATUS_TAKEPHOTH); //上电拍照一次
 			Sys_Enter_Standby();
 			
 			break;
@@ -151,12 +146,25 @@ static void SYSINIT(void)
 			break;
 		case SYSTEM_STATUS_WAIT_WAKEUP:
 		{
-			
+			int i=0;
 			//被唤醒了
 			
 			if (GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0))
 			{
 				//被外部中断唤醒
+//				i=0;
+//				while(GPIO_ReadInputDataBit(GPIOA,GPIO_Pin_0))
+//				{
+//					if (i > 0xFF)
+//					{
+//						//MMA8452挂了，需要重新启动
+//						printf("重新启动MMA8452\r\n");
+//						IOI2C_Init();
+//						init_mma845x();
+//						break;
+//					}
+//					i++;
+//				}
 
 				
 				//如果两次报警间隔不小于 120 则不进入报警
@@ -224,6 +232,25 @@ static void SYSINIT(void)
 					
 				}
 				
+				if (GET_AUTOWAKEUP_TIM <= RTC_GetCounter())
+				{
+					printf("定期唤醒时间到了\r\n");
+					
+					//目前定期唤醒，只是为了拍照
+					SET_SYSTEM_STATUS(SYSTEM_STATUS_TAKEPHOTH);
+					
+					//关机重启重新进入流程
+					sys_shutdown();
+					//
+				}else{
+					#ifdef __WAKEUP_DBUG
+					printf("距离定期唤醒还有 %d秒\r\n",GET_AUTOWAKEUP_TIM - RTC_GetCounter());
+					#endif
+				}
+				
+				
+				
+				
 				#ifdef __WAKEUP_DBUG
 				printf("进入休眠...\r\n");
 				#endif
@@ -234,10 +261,17 @@ static void SYSINIT(void)
 			break; 
 		}
 		
+		case SYSTEM_STATUS_TAKEPHOTH:	
+		{
+			//拍照
+			mdata.doing = DOING_UPLOADPHPTO;
+			mdata.status = MODEM_POWEROFF;
+			//回复等待唤醒状态
+			SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
+			goto exit_standby;
+			break;
+		}
 		case SYSTEM_STATUS_RUN:
-		
-			
-			
 			break;
 	}
 	
@@ -340,13 +374,13 @@ void mainloop(void)
 			status_master(mdata.status,60*1000);
 			
 			//通过向模块发送AT指令判断返回结果是否正确来判定模块是否已经正常启动了
-			ret = at_cmd_wait("AT\r\n",AT_AT,0,AT_WAIT_LEVEL_2);
+			ret = at_cmd_wait("ATE0\r\n",AT_AT,0,2000);
 			
 			mdata.test_at_cnt ++;
 			
 			if (ret == AT_RESP_OK)
 			{
-				ret = at_cmd_wait("ATE0\r\n",AT_AT,0,AT_WAIT_LEVEL_2);
+				//ret = at_cmd_wait("ATE0\r\n",AT_AT,0,AT_WAIT_LEVEL_2);
 				
 				//模块AT指令返回正确，认为模块已经正常启动，进入下一个状态
 				printf("模块开机成功,休眠10秒让模块初始化完成\r\n");
@@ -487,15 +521,34 @@ void mainloop(void)
 		
 		case MODEM_GPRS_CGREG:
 		{
-			int ret;
+			int ret=0;
 			status_master(mdata.status,60*1000);
 			at_cmd_wait_str_str("AT+CGREG=2\r\n","OK","OK",5000);
-			at_cmd_wait_str("AT+CGREG?\r\n",AT_CGREG,"OK",5000);
-			mdata.status = MODEM_GPRS_MIPCALL_SUCCESS;
+			ret += at_cmd_wait_str("AT+CGREG?\r\n",AT_CGREG,"OK",5000);
+			if (ret != AT_RESP_CGREGOK)
+			{
+				if (mdata.status_running_cnt > 5)
+					mdata.status = MODEM_RESET;
+			}else{
+				mdata.status = MODEM_GPRS_CIPMOD;
+			}
 			break;
 			
 		}
-		
+		case MODEM_GPRS_CIPMOD:
+		{
+			int ret;
+			status_master(mdata.status,60*1000);
+			ret = at_cmd_wait_str_str("AT+CIPMODE=1\r\n","OK","OK",2000);
+			if (ret!=AT_RESP_OK)
+			{
+				if (mdata.status_running_cnt > 2)
+					mdata.status = MODEM_RESET;
+			}else{
+				mdata.status = MODEM_GPRS_MIPCALL_SUCCESS;
+			}
+			break;
+		}
 		case MODEM_GPRS_MIPCALL_SUCCESS:
 		{
 			
@@ -505,10 +558,8 @@ void mainloop(void)
 			
 			tmpstr = (char*)alloc_mem(__FILE__,__LINE__,1024); 
 			tmpstr[0] = 0x0;
-			
-			ret = at_cmd_wait_str_str("AT+CIPHEAD=1\r\n","OK","OK",100);
+
 			snprintf(tmpstr,1024,"AT+CIPSTART=\"UDP\",\"%s\",%d\r\n",SERVER_ADDR,SERVER_PORT);
-			//AT+CIPHEAD=
 			ret = at_cmd_wait(tmpstr,AT_IPSTART,AT_WAIT,10000);
 			free_mem(__FILE__,__LINE__,(unsigned char *)tmpstr);
 
@@ -529,7 +580,12 @@ void mainloop(void)
 		case MODEM_GPRS_MIPOPEN_SUCCESS:
 		{
 			status_master(mdata.status,60*1000);
-			mdata.status = PROTO_SEND_ALARM;
+			
+			if(mdata.doing == DOING_10A0)
+				mdata.status = PROTO_SEND_ALARM;
+			else
+			if (mdata.doing == DOING_UPLOADPHPTO)
+				mdata.status = PROTO_CHECK_1091;
 			break;
 		}
 		
@@ -540,7 +596,7 @@ void mainloop(void)
 			if (push_10A0(mdata._10a0type) < 0)
 			{
 				printf("发送10A0 失败\r\n");
-				if (mdata.status_running_cnt > 5)
+				if (mdata.status_running_cnt >= 5)
 				{
 					mdata.status = MODEM_RESET;
 				}
@@ -556,7 +612,19 @@ void mainloop(void)
 			break;
 		case PROTO_CHECK_1091:
 		{
+			int ret;
 			status_master(mdata.status,60*1000);
+			ret = push_1091();
+			if (ret == 0)
+				mdata.status = START_SEND_IMG;
+			
+			//3次没有反应则认为图片传送失败
+			if (mdata.status_running_cnt > 3)
+			{
+				mdata.status = PROTO_SEND_IMG_ERROR;
+				//
+			}
+			
 			break;
 		}
 		
@@ -607,16 +675,13 @@ void mainloop(void)
 			printf("           UPLOAD PHOTO ERROR!                       *\r\n");
 			printf("******************************************************\r\n");
 		
-			mdata.status = MODEM_RESET;
-			
+			//休眠
 		
-			//如果模块重启了3次仍然没有重新上传，那么进入休眠
-			if (mdata.modem_reset_cnt > 3)
-			{
-				mdata.status = SYS_POWEROFF;
-				
-			}
-			
+			//1个小时之后重发
+			printf("一个小时之后重新拍\r\n");
+			SET_AUTOWAKEUP_TIM(RTC_GetCounter() + 3600);
+			mdata.status = SYS_POWEROFF;
+		
 			break;
 		case PROTO_SEND_IMG_SUCCESS:
 			
@@ -629,56 +694,20 @@ void mainloop(void)
 			DEBUG_VALUE(mdata.upload_index);
 			DEBUG_VALUE(mdata.need_uload_cnt);
 		
-			mdata.upload_index ++; //上传成功则将上传的索引+1
-
-			printf("set prev photo time :\r\n");
+			//mdata.time1
+			SET_AUTOWAKEUP_TIM(RTC_GetCounter() + mdata.time1);
+			Sys_Enter_Standby();
+			mdata.status = SYS_POWEROFF;
 		
-			DEBUG_VALUE(mdata.paizhao_time);
-			//__SET_LAST_PAIZHAOTIM(mdata.paizhao_time);
+			
 		
-			if (mdata.upload_index < mdata.need_uload_cnt)
-			{
-				//如果上传数量不够，则继续上传
-				mdata.status = START_SEND_IMG;
-			}
-			else
-			{
-				mdata.status = PROTO_UPLOAD_DONE_GOTO_SLEEP;
-			}  
 			break;
 		case PROTO_UPLOAD_DONE_GOTO_SLEEP:
 			
 			status_master(mdata.status,60*1000);
-			
-			/**
-
-			//计算并设置下一次的拍照时间
-			DEBUG_VALUE(RTC_GetCounter());
-			DEBUG_VALUE(mdata.paizhao_time);
-			DEBUG_VALUE(__GET_TIM1);
-			
-			if ((__GET_TIM1 >= (RTC_GetCounter() - mdata.paizhao_time)) && (RTC_GetCounter() >= mdata.paizhao_time))
-			{
-				unsigned int __wakeup_time = __GET_TIM1 - (RTC_GetCounter() - mdata.paizhao_time);	
-				
-				//减去一个系统启动误差
-				if (__wakeup_time > 3)
-				{
-					__wakeup_time -= 3;
-				}
-				DEBUG_VALUE(__wakeup_time);
-				__SET_NEXT_WAKEUP_TIM(__wakeup_time);
-			}
-			else
-			{
-				__SET_NEXT_WAKEUP_TIM(0);
-			}
-			*/
-
-			
-			
+		
 			//复位系统进入休眠
-			sys_shutdown();		
+			sys_shutdown();
 		
 			break;
 		case PROTO_ALARM:
@@ -734,6 +763,7 @@ static int push_1091(void)
 		{
 			case 0x9120:
 			{
+				process_1091pkg(rbuffer,recvlen,0);
 				ret1 = 0;
 				break;
 			}
@@ -743,7 +773,7 @@ static int push_1091(void)
 				break;
 		}
 		//
-	}else{
+	}else {
 		printf("RECV 2091 ERROR \r\n");
 	}
 	
@@ -929,10 +959,8 @@ static void set_img_data(void)
 	
 	extern unsigned int ___paizhaoshijian;
 	
-	//push_img_dat.imgdata = JpegBuffer;
-	//push_img_dat.img_total_len = JpegDataCnt;
 	unsigned int paizhaotime;
-	//push_img_dat.imgdata = read_imgbuffer(mdata.upload_index,&push_img_dat.img_total_len,&paizhaotime);
+	push_img_dat.imgdata = read_imgbuffer(mdata.upload_index,&push_img_dat.img_total_len,&paizhaotime);
 	
 	mdata.paizhao_time = paizhaotime;
 	
@@ -991,7 +1019,10 @@ static int push_1092(unsigned short imgl , unsigned char *imgdata ,unsigned shor
 					transfer16(&data2092p->hdr.messageSeq);
 					printf("RECV 2092 SUCCESS \r\n");
 					printf("RECV SEQ  %d \r\n",data2092p->hdr.messageSeq);
-					ret1 = 0;
+					if (img_frq == data2092p->hdr.messageSeq)
+						ret1 = 0;
+					else
+						printf("SEQ 错误 \r\n");
 					break;
 				default:
 					printf("RECV 2092 FORMAT ERROR \r\n");
@@ -1058,100 +1089,85 @@ static int push_img_routing(void)
 
 int push_data_A6(unsigned char *data , int length , unsigned char *outdata , int timeout)
 {
-	extern unsigned char __debug_uart_flag;
-	
-	int ret = 0;
-//	int recv_length = 0;
-	
-	char *tmpbuf = (char*)alloc_mem(__FILE__,__LINE__,32);
-
-	snprintf(tmpbuf,32,"AT+CIPSEND=%d\r\n",length);
-	send_at(tmpbuf);
-	
-	free_mem(__FILE__,__LINE__,(unsigned char*)tmpbuf);
-	
-	ret = at_cmd_wait_str_str(0,">",">",500);
-	
-	if (ret != 0)
-	{
-		printf("等待发送标志超时 \r\n");
-		return -1;
-	}
-	
+	int i=0;
+	clear_uart2_buffer();
+	start_uart_debug();
 	send_data(data,length);
+	//wait data:
 	
-	ret = at_cmd_wait_str_str(0,"SEND","OK",timeout);
 	
-	if (ret != 0)
+	for(i=0;i<timeout;)
 	{
-		printf("发送UDP数据失败\r\n");
-		return -1;
-	}else{
-		printf("发送UDP数据成功\r\n");
-	}
-	
-	//如果接收缓冲有数据则期待一个接收
-	if ((outdata > 0) && (ret == 0))
-	{
-		start_uart_debug();
-		ret = at_cmd_wait_str_str(0,"+IPD,","+IPD,",5000);
-		utimer_sleep(1000);
-		stop_uart_debug();
-		
-		if (ret == 0)
+		if (uart2_rx_buffer_index > 0)
 		{
-			
-			char *colon,*dot;
-			char tmpbuf[8];
-			char x;
-			int rlen;
-			
-			printf("收到服务器数据\r\n");
-			
-			DEBUG_VALUE(0);
-			
-			colon = strstr(uart2_rx_buffer,":");
-			dot = strstr(uart2_rx_buffer,",");
-			
-			printf("colon %02x dot %02x \r\n",(unsigned int)colon,(unsigned int)dot);
-			
-			if ((colon <= dot) || ((colon-dot) > 8))
-			{
-				ret = 0;
-			}
-			else
-			{
-			
-				DEBUG_VALUE(0);
-				
-				for(x=0;x<(colon-dot-1);x++)
-				{
-					tmpbuf[x] = dot[x+1];
-				}
-				tmpbuf[x] = 0x0;
-				
-				DEBUG_VALUE(0);
-				
-				sscanf(tmpbuf,"%d",&rlen);
-				memcpy(outdata,colon+1,rlen);
-				
-				DEBUG_VALUE(0);
-				
-				ret = rlen;
-			}
-
-		}else{
-			printf("服务器没有数据返回\r\n");
-			ret = 0;
+			utimer_sleep(500);
+			break;
 		}
-		
-	}else{
-		ret = -1;
+		utimer_sleep(500);
+		i+=500;
 	}
 	
-	return ret;
+	memcpy(outdata,uart2_rx_buffer,uart2_rx_buffer_index);
+	
+	stop_uart_debug();
+	
+	if (strstr(uart2_rx_buffer,"UDP ERROR"))
+	{
+		printf("UDP ERROR:%s\r\n",uart2_rx_buffer);
+		return -1;
+	}
+	
+	return uart2_rx_buffer_index;
+
 	
 }
 
+
+static int process_1091pkg(unsigned char *rbuffer , int recvlen , unsigned short seq)
+{
+	int ret1 = -1;
+	
+	struct UDP_PROTO_2091_DATA *data2091p;
+	struct UDP_PROTO_2092_DATA *data2092p;
+	struct UDP_PROTO_HDR *hdr;
+	
+	if (recvlen >= sizeof(struct UDP_PROTO_HDR))
+	{
+		char *hexbuffer = 0;
+		
+		data2091p = (struct UDP_PROTO_2091_DATA *)rbuffer;
+		data2092p = (struct UDP_PROTO_2092_DATA *)rbuffer;
+	  hdr = (struct UDP_PROTO_HDR *)rbuffer;
+		
+
+		switch(hdr->cmdcode)
+		{
+			case 0x9120:
+			{
+			
+			
+				printf("成功收到2091包 \r\n");
+				printf("TIME1 拍照时间 : %02X %02X %02X %02X \r\n",data2091p->time1[0],data2091p->time1[1],data2091p->time1[2],data2091p->time1[3]);
+				printf("TIME2 上传时间 : %02X %02X %02X %02X \r\n",data2091p->time2[0],data2091p->time2[1],data2091p->time2[2],data2091p->time2[3]);	
+			
+				mdata.time1 =  data2091p->time1[3] + (data2091p->time1[2]*256) + (data2091p->time1[1]*256*256) + (data2091p->time1[0]*256*256*256);
+				mdata.time2 =  data2091p->time2[3] + (data2091p->time2[2]*256) + (data2091p->time2[1]*256*256) + (data2091p->time2[0]*256*256*256);
+			
+			
+				ret1 = 0;
+				break;
+			}
+			default:
+				break;
+		}
+		//
+	}else{
+		printf("收到了错误的服务器ACK\r\n");
+	}
+	
+	return ret1;
+	
+	return 0;
+}
 
 

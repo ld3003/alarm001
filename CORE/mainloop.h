@@ -24,6 +24,7 @@ typedef enum {
 	MODEM_GPRS_CGACT,
 	MODEM_GPRS_CGATT,
 	MODEM_GPRS_CGREG,
+	MODEM_GPRS_CIPMOD,			//进行网络注册
 	MODEM_GPRS_MIPCALL_SUCCESS,			//进行网络注册
 	MODEM_GPRS_MIPOPEN_SUCCESS,			//创建SOCKET连接
 	PROTO_CHECK_1091,
@@ -50,6 +51,7 @@ extern const struct STATUS_STR_ITEM sstr_item[];
 enum {
 	DOING_10A0 = 0,
 	DOING_10A1,
+	DOING_UPLOADPHPTO,
 };
 
 struct MAINLOOP_DATA {
@@ -84,6 +86,10 @@ extern struct MAINLOOP_DATA mdata;
 void mainloop_init(void);							//程序初始化
 void mainloop(void);									//程序循环
 
+/*
+	数据发送函数
+	返回值 -1 通信错误 0 未收到数据 >0 收到数据长度
+*/
 int push_data_A6(unsigned char *data , int length , unsigned char *outdata , int timeout);
 
 #endif

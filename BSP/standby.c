@@ -13,7 +13,7 @@ void Sys_Enter_Standby(void)
 	
 	GPIO_InitTypeDef GPIO_InitStructure;
 	
-	printf("Sys_Enter_Standby ...  \r\n");
+	//printf("Sys_Enter_Standby ...  \r\n");
 
   /* Configure all GPIO as analog to reduce current consumption on non used IOs */
   /* Enable GPIOs clock */
@@ -43,7 +43,7 @@ void Sys_Enter_DeepStandby(void)
 	
 	GPIO_InitTypeDef GPIO_InitStructure;
 	
-	printf("Sys_Enter_Standby ...  \r\n");
+	//printf("Sys_Enter_Standby ...  \r\n");
 
   /* Configure all GPIO as analog to reduce current consumption on non used IOs */
   /* Enable GPIOs clock */
@@ -95,22 +95,6 @@ void WKUP_Pin_Init(void)
   GPIO_Init(GPIOA, &GPIO_InitStructure);
 	
 
-
-	RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO,ENABLE);
-	
-	GPIO_EXTILineConfig(GPIO_PortSourceGPIOA,GPIO_PinSource0);
-
-	EXTI_InitStructure.EXTI_Line = EXTI_Line0; //PA0        
-	EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Interrupt;  
-	EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;   
-	EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-	EXTI_Init(&EXTI_InitStructure);
-
-	NVIC_InitStructure.NVIC_IRQChannel = EXTI0_IRQn;   
-	NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 0x02;
-	NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0x03;
-	NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;    
-	NVIC_Init(&NVIC_InitStructure);   
 
 }
 

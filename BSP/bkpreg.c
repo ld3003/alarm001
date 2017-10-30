@@ -116,3 +116,25 @@ void write_bkp_buffer(unsigned char*buf)
 	BKP_WriteBackupRegister(BKP_DR20,p[i++]);
 	
 }
+
+void _set_auto_wakeup_tim(unsigned int time)
+{
+	unsigned short *p;
+	p = (unsigned short *)(&time);
+	
+	BKP_WriteBackupRegister(BKP_DR10,p[0]);
+	BKP_WriteBackupRegister(BKP_DR11,p[1]);
+	
+}
+
+unsigned int _get_auto_wakeup_tim(void)
+{
+	unsigned int time;
+	unsigned short *p;
+	p = (unsigned short *)(&time);
+	
+	p[0] = BKP_ReadBackupRegister(BKP_DR10);
+	p[1] = BKP_ReadBackupRegister(BKP_DR11);
+	
+	return time;
+}

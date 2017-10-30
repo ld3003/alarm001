@@ -25,6 +25,7 @@
 #include "main.h"
 #include "ov2640api.h"
 
+static void takephoto(void);
 
 /*******************************************************************************
 * Function Name  : main
@@ -49,47 +50,86 @@ int main(void)
 	//设置APP已经进入启动
 	SET_BOOTLOADER_STATUS(2);
 	
-	
-//	{
-//		alloc_jpegbuffer();
-//		ov_poweron();
-//		_config_mco();
-//		InitSCCB();
-//		ov2640_init();
-//		for(;;){ov2640_read();utimer_sleep(2000);};
-//		free_jpegbuffer();
-//		
-//		for(;;){};
-//	}
-		
-	
 	WKUP_Pin_Init();
 	watch_dog_config();
-		
 	init_utimer();
 	init_task();
+	
+	takephoto();
+	
 	init_mem();
 	
 	SET_SYSTEM_COUNTER;
 	
-	printf("(当前时间[%d]最后一次报警时间[%d]\r\n",CURRENT_RTC_TIM,GET_LAST_ALARM_TIME);
-	
-	//led0_off();
-	//for(;;){}
+	Adc_Init();
+	Get_val();
+	for(;;){}
 	
 	init_uart2_buffer();
-	
-	/*
-	RUN_TEST;
-	mem = (struct MEM_DATA *)malloc(sizeof(struct MEM_DATA));
-	read_config();
-	*/
-	
 	for(;;){feed_watchdog();mainloop();}
 	
 	return 0;
 }
 
+static void takephoto(void)
+{
+	//摄像头拍照部分必须再程序一开始进行，因此进行特殊处理
+	//SET_SYSTEM_STATUS(SYSTEM_STATUS_TAKEPHOTH);
+	switch(GET_SYSTEM_STATUS)
+	{
+		case SYSTEM_STATUS_TAKEPHOTH:
+		{
+			int i = 0;
+			int initOV = -1;
+			int photolen = 0;
+			unsigned int takeTime;
+			
+			alloc_jpegbuffer();
+			ov_poweron();
+			_config_mco();
+			InitSCCB();
+			
+			for(i=0;i<10;i++)
+			{
+				ov_poweron();
+				initOV = ov2640_init();
+				if (initOV >=0 )
+					break;
+				printf("启动摄像头失败，重试 %d 次 \r\n",i);
+				ov_poweroff();
+				utimer_sleep(1000);
+			}
+			
+			if (initOV != 0)
+				goto endtakephoto;
+			
+			photolen = ov2640_read();
+			if (photolen > 0)
+			{
+				unsigned char *imgbuf;
+				//将图片写入
+				printf("写入flash\r\n");
+				__write_img_2_flash(0,JpegBuffer,photolen,0);
+				
+				//测试写入是否正确
+				imgbuf = read_imgbuffer(0,&photolen,&takeTime);
+				for(i=0;i<photolen;i++)
+				{
+					uart1_putchar(imgbuf[i]);
+					//
+				}
+			}
+			
+			endtakephoto:
+			
+			free_jpegbuffer();
+			ov_poweroff();
+			break;
+		}
+		
+	}
+	//
+}
 
 
 
