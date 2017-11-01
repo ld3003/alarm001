@@ -67,5 +67,7 @@ int read_usb_status(void);
 #define ENABLE_USB			usben_on()
 #define DISABLE_USB			usben_off()
 
+unsigned short read_vdd_voltage(void);
+
 #endif
 

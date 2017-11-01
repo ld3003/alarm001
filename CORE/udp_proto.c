@@ -99,9 +99,6 @@ int make_0x1091(unsigned char *data , unsigned char *in_data , short in_len)
 		set_device_number(body.hdr.device_number);
 		
 		//------------------
-
-    body.dianliang = 0;
-    transfer16((unsigned short*)&body.dianliang);
 		
 		body.dianliang = mdata.voltage;
 		transfer16((unsigned short*)&body.dianliang);

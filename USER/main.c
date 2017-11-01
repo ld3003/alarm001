@@ -60,11 +60,7 @@ int main(void)
 	init_mem();
 	
 	SET_SYSTEM_COUNTER;
-	
-	Adc_Init();
-	Get_val();
-	for(;;){}
-	
+		
 	init_uart2_buffer();
 	for(;;){feed_watchdog();mainloop();}
 	

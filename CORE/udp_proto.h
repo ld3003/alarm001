@@ -68,6 +68,7 @@ struct UDP_PROTO_1091 {
     c_u8 signal_val;
 		c_u16 device_type;
     //
+	
 };
 
 struct UDP_PROTO_1092 {

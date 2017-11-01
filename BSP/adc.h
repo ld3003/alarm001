@@ -1,8 +1,8 @@
 #ifndef __adc_h__
 #define __adc_h__
 
-void Adc_Init(void);
-unsigned short  Get_val(void);
+void adc_init();
+unsigned short get_adcval(void);
 
 #endif
 
