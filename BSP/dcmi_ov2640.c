@@ -2246,20 +2246,13 @@ void __write_img_2_flash(int index , unsigned char *buffer , int buflen , unsign
 		case 0:
 			program_address = IMG_CACHE_ADDR_0;
 			break;
-		case 1:
-			program_address = IMG_CACHE_ADDR_1;
-			break;
-		case 2:
-			program_address = IMG_CACHE_ADDR_2;
-			break;
 		default:
 			break;
 			
 	}
 	
 	FLASH_ProgramStart(program_address,IMG_CACHE_SIZE);
-	
-	FLASH_AppendBuffer(hdr,sizeof(hdr)); // paizhaotime
+	FLASH_AppendBuffer(hdr,sizeof(hdr));
 	FLASH_AppendBuffer((unsigned char*)(&buflen),sizeof(buflen));
 	FLASH_AppendBuffer((unsigned char*)(&paizhaotime),sizeof(paizhaotime));
 	FLASH_AppendBuffer(buffer,buflen);
@@ -2275,12 +2268,6 @@ unsigned char* read_imgbuffer(int index  , int *imglen , unsigned int *paizhaoti
 	{
 		case 0:
 			program_address = IMG_CACHE_ADDR_0;
-			break;
-		case 1:
-			program_address = IMG_CACHE_ADDR_1;
-			break;
-		case 2:
-			program_address = IMG_CACHE_ADDR_2;
 			break;
 		default:
 			break;

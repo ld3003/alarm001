@@ -54,6 +54,7 @@ int main(void)
 	watch_dog_config();
 	init_utimer();
 	init_task();
+	mainloop_init();
 	
 	takephoto();
 	
@@ -62,6 +63,14 @@ int main(void)
 	SET_SYSTEM_COUNTER;
 		
 	init_uart2_buffer();
+	
+	//测试低功耗
+	//utimer_sleep(3000);
+	//IOI2C_Init();
+	//init_mma845x();
+	//Sys_Enter_DeepStandby();
+	
+	
 	for(;;){feed_watchdog();mainloop();}
 	
 	return 0;
@@ -103,6 +112,10 @@ static void takephoto(void)
 			if (photolen > 0)
 			{
 				unsigned char *imgbuf;
+				
+				//标记摄像头可用
+				mdata.cam_ok = 1;
+				
 				//将图片写入
 				printf("写入flash\r\n");
 				__write_img_2_flash(0,JpegBuffer,photolen,0);

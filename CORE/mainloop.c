@@ -115,6 +115,10 @@ void mainloop_init(void)
 static void SYSINIT(void)
 {
 	
+	#ifdef __WAKEUP_DBUG
+	DEBUG_BKP_REG;
+	#endif
+	
 	switch(GET_SYSTEM_STATUS)
 	{
 		case SYSTEM_STATUS_INIT:
@@ -210,6 +214,7 @@ static void SYSINIT(void)
 			}else{
 				//ø¥√≈π∑ªΩ–— / ∂®∆⁄ªΩ–—
 				
+				//ºÏ≤Èµ±«∞ «∑Ò¥¶”⁄æ≤÷π◊¥Ã¨£¨»Áπ˚»Áπ˚ «æ≤÷π◊¥Ã¨–Ë“™∆¡±ŒªΩ–—‘¥
 				if (GET_MOTIONLESS_STATUS == 0)
 				{
 					
@@ -264,11 +269,17 @@ static void SYSINIT(void)
 		case SYSTEM_STATUS_TAKEPHOTH:	
 		{
 			//≈ƒ’’
-			mdata.doing = DOING_UPLOADPHPTO;
-			mdata.status = MODEM_POWEROFF;
-			//ªÿ∏¥µ»¥˝ªΩ–—◊¥Ã¨
-			SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
-			goto exit_standby;
+			if (mdata.cam_ok == 1)
+			{
+				mdata.doing = DOING_UPLOADPHPTO;
+				mdata.status = MODEM_POWEROFF;
+				//ªÿ∏¥µ»¥˝ªΩ–—◊¥Ã¨
+				SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
+				goto exit_standby;
+			}else{
+				SET_AUTOWAKEUP_TIM(RTC_GetCounter() + SEND_IMGERROR_SLEEP_TIME)
+				SET_SYSTEM_STATUS(SYSTEM_STATUS_WAIT_WAKEUP);
+			}
 			break;
 		}
 		case SYSTEM_STATUS_RUN:
@@ -332,8 +343,6 @@ void mainloop(void)
 		
 			//Ω´“ª–©πÿº¸º∆ ˝∆˜«Â¡„
 			mdata.modem_reset_cnt ++;
-			mdata.test_at_cnt = 0;
-			
 			mdata.status = MODEM_POWEROFF;
 			break;
 		
@@ -344,8 +353,8 @@ void mainloop(void)
 			*/
 		
 			//‘⁄∆Ù∂ØGPRSƒ£øÈ÷Æ«∞ÕÍ≥…µÁ—π≤…ºØ
-			mdata.voltage = read_vdd_voltage() + 600;
-			printf("µ±«∞µÁ≥ÿµÁ—π %d\r\n",mdata.voltage);
+			mdata.device_voltage = read_vdd_voltage() + 600;
+			printf("µ±«∞µÁ≥ÿµÁ—π %d\r\n",mdata.device_voltage);
 		
 		
 			status_master(mdata.status,60*1000);
@@ -366,6 +375,8 @@ void mainloop(void)
 		
 			if (MAINLOOP_STATUS_DELAY >= 50) //5√Î
 			{
+				
+				mdata.test_at_cnt = 0;
 				mdata.status = MODEM_POWERACTIVE_TESTAT;
 				
 				printf("mdata.status = MODEM_POWERACTIVE_TESTAT;\r\n");
@@ -387,7 +398,7 @@ void mainloop(void)
 				//ret = at_cmd_wait("ATE0\r\n",AT_AT,0,AT_WAIT_LEVEL_2);
 				
 				//ƒ£øÈAT÷∏¡Ó∑µªÿ’˝»∑£¨»œŒ™ƒ£øÈ“—æ≠’˝≥£∆Ù∂Ø£¨Ω¯»Îœ¬“ª∏ˆ◊¥Ã¨
-				printf("ƒ£øÈø™ª˙≥…π¶,–›√ﬂ10√Î»√ƒ£øÈ≥ı ºªØÕÍ≥…\r\n");
+				printf("ƒ£øÈø™ª˙≥…π¶,–›√ﬂ5√Î»√ƒ£øÈ≥ı ºªØÕÍ≥…\r\n");
 				utimer_sleep(5000);
 				mdata.status = MODEM_GET_IMEI;
 				
@@ -404,7 +415,7 @@ void mainloop(void)
 					printf("******************************************************\r\n");
 					//30√Î∫Û‘Ÿ∆Ù∂Ø
 					//__SET_NEXT_WAKEUP_TIM(26);
-					mdata.status = SYS_POWEROFF;
+					mdata.status = MODEM_GPRS_ERROR;
 					
 				}
 			}
@@ -416,9 +427,14 @@ void mainloop(void)
 			break;
 		case MODEM_GET_IMEI:
 		{
+			int ret;
 			status_master(mdata.status,60*1000);
-			at_cmd_wait_str("AT+GSN\r\n",AT_GSN,"OK",100);
-			mdata.status = MODEM_CHECK_MODEM_TYPE;
+			ret = at_cmd_wait_str("AT+GSN\r\n",AT_GSN,"OK",100);
+			if (AT_RESP_OK == ret)
+				mdata.status = MODEM_CHECK_MODEM_TYPE;
+			
+			if (mdata.status_running_cnt > 3)
+				mdata.status = MODEM_GPRS_ERROR;
 			
 			break;
 		}
@@ -449,7 +465,7 @@ void mainloop(void)
 				printf("ºÏ≤ÈSIMø® ß∞‹,÷ÿ∆Ùƒ£◊È\r\n");
 				
 				if (mdata.status_running_cnt > 5)
-					mdata.status = MODEM_RESET;
+					mdata.status = MODEM_GPRS_ERROR;
 				else
 					utimer_sleep(1000); //µ»¥˝1s∫Û‘Ÿ¥Œ÷¥––
 			}
@@ -458,11 +474,19 @@ void mainloop(void)
 		
 		case MODEM_CHECK_CSQ:
 		{
-			
+			int ret;
 			status_master(mdata.status,60*1000);
-			at_cmd_wait("AT+CSQ\r\n",AT_CSQ,0,500);
-			printf("µ±«∞–≈∫≈÷ ¡ø : %d\r\n",gsm_signal);
-			mdata.status = MODEM_GPRS_READY;
+			ret = at_cmd_wait("AT+CSQ\r\n",AT_CSQ,0,500);
+			if (AT_RESP_OK == ret)
+			{
+				printf("µ±«∞–≈∫≈÷ ¡ø : %d\r\n",gsm_signal);
+				mdata.status = MODEM_GPRS_READY;
+			}else{
+				if (mdata.status_running_cnt > 3)
+				{
+					mdata.status = MODEM_GPRS_ERROR;
+				}
+			}
 			
 			break;
 			//
@@ -483,6 +507,11 @@ void mainloop(void)
 			if (ret == 0)
 			{
 				mdata.status = MODEM_GPRS_CGACT;
+			}else{
+				if (mdata.status_running_cnt > 2)
+				{
+					mdata.status = MODEM_GPRS_ERROR;
+				}
 			}
 			
 			break;
@@ -498,7 +527,7 @@ void mainloop(void)
 			}else{
 				printf("º§ªÓGPRS CGACT  ß∞‹\r\n");
 				if (mdata.status_running_cnt > 5)
-					mdata.status = MODEM_RESET;
+					mdata.status = MODEM_GPRS_ERROR;
 				else
 					utimer_sleep(1000); //µ»¥˝1s∫Û‘Ÿ¥Œ÷¥––
 			}
@@ -516,7 +545,7 @@ void mainloop(void)
 			}else{
 				printf("≤È—Øº§ªÓGPRS CGATT  ß∞‹\r\n");
 				if (mdata.status_running_cnt > 5)
-					mdata.status = MODEM_RESET;
+					mdata.status = MODEM_GPRS_ERROR;
 				else
 					utimer_sleep(1000); //µ»¥˝1s∫Û‘Ÿ¥Œ÷¥––
 			}
@@ -532,13 +561,31 @@ void mainloop(void)
 			if (ret != AT_RESP_CGREGOK)
 			{
 				if (mdata.status_running_cnt > 5)
-					mdata.status = MODEM_RESET;
+					mdata.status = MODEM_GPRS_ERROR;
 			}else{
-				mdata.status = MODEM_GPRS_CIPMOD;
+				mdata.status = MODEM_GPRS_GETLOC;
 			}
 			break;
 			
 		}
+		
+		case MODEM_GPRS_GETLOC:
+		{
+			int ret;
+			status_master(mdata.status,60*1000);
+			ret = at_cmd_wait("AT+AMGSMLOC\r\n",AT_AMGSMLOC,AT_WAIT,5000);
+			if (ret == AT_RESP_OK)
+			{
+				mdata.status = MODEM_GPRS_CIPMOD;
+				//
+			}else{
+			}
+			
+			
+			
+			break;
+		}
+		
 		case MODEM_GPRS_CIPMOD:
 		{
 			int ret;
@@ -547,7 +594,7 @@ void mainloop(void)
 			if (ret!=AT_RESP_OK)
 			{
 				if (mdata.status_running_cnt > 2)
-					mdata.status = MODEM_RESET;
+					mdata.status = MODEM_GPRS_ERROR;
 			}else{
 				mdata.status = MODEM_GPRS_MIPCALL_SUCCESS;
 			}
@@ -574,9 +621,13 @@ void mainloop(void)
 			}else{
 				printf("SERVER ¡¥Ω” ß∞‹\r\n");
 				if (mdata.status_running_cnt > 2)
-					mdata.status = MODEM_RESET;
+				{
+					mdata.status = MODEM_GPRS_ERROR;
+				}
 				else
-					utimer_sleep(1000); //µ»¥˝1s∫Û‘Ÿ¥Œ÷¥––
+				{
+					utimer_sleep(1000); //µ»¥˝1s∫Û‘Ÿ¥Œ÷¥–
+				}
 			}
 			
 			break;
@@ -584,49 +635,95 @@ void mainloop(void)
 		case MODEM_GPRS_MIPOPEN_SUCCESS:
 		{
 			status_master(mdata.status,60*1000);
+			mdata.status = PROTO_CHECK_1091;
 			
-			if(mdata.doing == DOING_10A0)
-				mdata.status = PROTO_SEND_ALARM;
-			else
-			if (mdata.doing == DOING_UPLOADPHPTO)
-				mdata.status = PROTO_CHECK_1091;
 			break;
 		}
 		
-		case PROTO_SEND_ALARM:
-			
-			status_master(mdata.status,10*60*1000);
 		
-			if (push_10A0(mdata._10a0type) < 0)
+		//
+		
+		case MODEM_GPRS_ERROR:
+		{
+			
+			mdata.modem_gprs_error_cnt ++;
+			
+			if(mdata.modem_gprs_error_cnt > 3)
 			{
-				printf("∑¢ÀÕ10A0  ß∞‹\r\n");
-				if (mdata.status_running_cnt >= 5)
-				{
-					mdata.status = MODEM_RESET;
-				}
-			}else{
-				
-				//
-				printf("∑¢ÀÕ10a0 ˝æ›≥…π¶\r\n");
+				printf("******************************************************\r\n");
+				printf("           MODEM_GPRS_ERROR!                         *\r\n");
+				printf("******************************************************\r\n");
 				mdata.status = SYS_POWEROFF;
 				
+				//∏˘æ›µ±«∞◊¥Ã¨
+				switch(mdata.doing)
+				{
+					case DOING_UPLOADPHPTO:
+						SET_NEXT_WAKEUP_TIME(CURRENT_RTC_TIM + SEND_IMGERROR_SLEEP_TIME);
+						break;
+					case DOING_10A0:
+						break;
+					default:
+						break;
+				}
 				
+			}else{
+				mdata.status = MODEM_RESET;
 			}
-			
 			break;
+		}
+		
 		case PROTO_CHECK_1091:
 		{
 			int ret;
 			status_master(mdata.status,60*1000);
 			ret = push_1091();
 			if (ret == 0)
-				mdata.status = START_SEND_IMG;
+			{
+				if(mdata.doing == DOING_10A0)
+				{
+					mdata.status = PROTO_SEND_ALARM;
+				}
+				else if (mdata.doing == DOING_UPLOADPHPTO)
+				{
+					mdata.status = START_SEND_IMG;
+				}
+				
+			}
 			
-			//3¥Œ√ª”–∑¥”¶‘Ú»œŒ™Õº∆¨¥´ÀÕ ß∞‹
+			//3¥Œ√ª”–∑¥”¶‘Ú»œŒ™1091 ß∞‹
 			if (mdata.status_running_cnt > 3)
 			{
-				mdata.status = PROTO_SEND_IMG_ERROR;
-				//
+				if (mdata.doing == DOING_UPLOADPHPTO)
+				{
+					mdata.status = PROTO_SEND_IMG_ERROR;
+				}
+				else if(mdata.doing == DOING_10A0)
+				{
+					mdata.status = SYS_POWEROFF;
+				}
+			}
+			
+			break;
+		}
+		
+		case PROTO_SEND_ALARM:
+		{
+			
+			status_master(mdata.status,10*60*1000);
+		
+			if (push_10A0(mdata._10a0type) < 0)
+			{
+				printf("∑¢ÀÕ10A0  ß∞‹\r\n");
+				
+			}else{
+				printf("∑¢ÀÕ10a0 ˝æ›≥…π¶\r\n");
+				mdata.status = SYS_POWEROFF;
+			}
+			
+			if (mdata.status_running_cnt >= 5)
+			{
+				mdata.status = SYS_POWEROFF;
 			}
 			
 			break;
@@ -683,7 +780,7 @@ void mainloop(void)
 		
 			//1∏ˆ–° ±÷Æ∫Û÷ÿ∑¢
 			printf("“ª∏ˆ–° ±÷Æ∫Û÷ÿ–¬≈ƒ\r\n");
-			SET_AUTOWAKEUP_TIM(RTC_GetCounter() + 3600);
+			SET_AUTOWAKEUP_TIM(RTC_GetCounter() + SEND_IMGERROR_SLEEP_TIME);
 			mdata.status = SYS_POWEROFF;
 		
 			break;
@@ -695,25 +792,12 @@ void mainloop(void)
 			printf("           UPLOAD PHOTO SUCCESS                       \r\n");
 			printf("******************************************************\r\n");
 		
-			DEBUG_VALUE(mdata.upload_index);
-			DEBUG_VALUE(mdata.need_uload_cnt);
-		
 			//mdata.time1
 			SET_AUTOWAKEUP_TIM(RTC_GetCounter() + mdata.time1);
-			Sys_Enter_Standby();
 			mdata.status = SYS_POWEROFF;
 		
-			
-		
 			break;
-		case PROTO_UPLOAD_DONE_GOTO_SLEEP:
-			
-			status_master(mdata.status,60*1000);
 		
-			//∏¥ŒªœµÕ≥Ω¯»Î–›√ﬂ
-			sys_shutdown();
-		
-			break;
 		case PROTO_ALARM:
 			status_master(mdata.status,60*1000);
 			break;
@@ -964,11 +1048,8 @@ static void set_img_data(void)
 	extern unsigned int ___paizhaoshijian;
 	
 	unsigned int paizhaotime;
-	push_img_dat.imgdata = read_imgbuffer(mdata.upload_index,&push_img_dat.img_total_len,&paizhaotime);
-	
+	push_img_dat.imgdata = read_imgbuffer(0,&push_img_dat.img_total_len,&paizhaotime);
 	mdata.paizhao_time = paizhaotime;
-	
-	DEBUG_VALUE(mdata.upload_index);
 	DEBUG_VALUE(push_img_dat.img_total_len);
 	
 	

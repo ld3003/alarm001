@@ -58,21 +58,28 @@ unsigned int __get_last_alarm_time(void);
 void __set_next_wakeup_time(unsigned int time);
 unsigned int __get_next_wakeup_time(void);
 
+#define GET_RTCINIT_FLAG		read_bkp_buffer(((unsigned char*)(&BKPREG)))->RTC_INIT_FLAG
+#define SET_RTCINIT_FLAG		read_bkp_buffer(((unsigned char*)(&BKPREG)))->RTC_INIT_FLAG = 1;WRITE_BKP_REG;//BKP_WriteBackupRegister(BKP_DR2,GET_SYSTEM_COUNTER+1)
 
-#define GET_SYSTEM_COUNTER  BKP_ReadBackupRegister(BKP_DR2)
-#define SET_SYSTEM_COUNTER	BKP_WriteBackupRegister(BKP_DR2,GET_SYSTEM_COUNTER+1)
+#define GET_SYSTEM_COUNTER  read_bkp_buffer(((unsigned char*)(&BKPREG)))->SYSTEM_RESET_COUNTE
+#define SET_SYSTEM_COUNTER	read_bkp_buffer(((unsigned char*)(&BKPREG)))->SYSTEM_RESET_COUNTE = GET_SYSTEM_COUNTER + 1;WRITE_BKP_REG;//BKP_WriteBackupRegister(BKP_DR2,GET_SYSTEM_COUNTER+1)
 
-#define SET_LAST_ALARM_TIME	__set_last_alarm_time()
-#define GET_LAST_ALARM_TIME	__get_last_alarm_time()
+#define GET_LAST_ALARM_TIME	read_bkp_buffer(((unsigned char*)(&BKPREG)))->LAST_ALARM_TIME
+#define SET_LAST_ALARM_TIME	read_bkp_buffer(((unsigned char*)(&BKPREG)))->LAST_ALARM_TIME = RTC_GetCounter();WRITE_BKP_REG;
 
-#define GET_SYSTEM_STATUS 	BKP_ReadBackupRegister(BKP_DR5)
-#define SET_SYSTEM_STATUS(X)		BKP_WriteBackupRegister(BKP_DR5,X)
+#define GET_SYSTEM_STATUS 	read_bkp_buffer(((unsigned char*)(&BKPREG)))->SYSTEM_STATUS
+#define SET_SYSTEM_STATUS(X)		read_bkp_buffer(((unsigned char*)(&BKPREG)))->SYSTEM_STATUS = X;WRITE_BKP_REG;
 
-#define SET_NEXT_WAKEUP_TIME(X)	__set_next_wakeup_time(X)
-#define GET_NEXT_WAKEUP_TIME	__get_next_wakeup_time()
+#define GET_NEXT_WAKEUP_TIME	read_bkp_buffer(((unsigned char*)(&BKPREG)))->WAKE_UP_TIME1
+#define SET_NEXT_WAKEUP_TIME(X)	read_bkp_buffer(((unsigned char*)(&BKPREG)))->WAKE_UP_TIME1 = X;WRITE_BKP_REG;
 
-#define GET_MOTIONLESS_STATUS	BKP_ReadBackupRegister(BKP_DR8)
-#define SET_MOTIONLESS_STATUS(X)	BKP_WriteBackupRegister(BKP_DR8,X)
+#define GET_AUTOWAKEUP_TIM			read_bkp_buffer(((unsigned char*)(&BKPREG)))->WAKE_UP_TIME2
+#define SET_AUTOWAKEUP_TIM(X)		read_bkp_buffer(((unsigned char*)(&BKPREG)))->WAKE_UP_TIME2 = X;WRITE_BKP_REG;
+
+#define GET_MOTIONLESS_STATUS	read_bkp_buffer(((unsigned char*)(&BKPREG)))->MOTIONLESS_STATUS
+#define SET_MOTIONLESS_STATUS(X)	read_bkp_buffer(((unsigned char*)(&BKPREG)))->MOTIONLESS_STATUS = X;WRITE_BKP_REG;
+
+
 
 /*
 	BKP_DR9
@@ -82,23 +89,40 @@ unsigned int __get_next_wakeup_time(void);
 #define GET_BOOTLOADER_STATUS	BKP_ReadBackupRegister(BKP_DR9)
 #define SET_BOOTLOADER_STATUS(X)	BKP_WriteBackupRegister(BKP_DR9,X)
 
-#define SET_AUTOWAKEUP_TIM(X)		_set_auto_wakeup_tim(X)
-#define GET_AUTOWAKEUP_TIM		_get_auto_wakeup_tim()
+
 
 
 #pragma pack(push)
 #pragma  pack(1)
 struct BKP_REG {
+	unsigned char RTC_INIT_FLAG:1;
+	unsigned char MOTIONLESS_STATUS:1;
+	
 	unsigned char SYSTEM_RESET_COUNTE;
-	unsigned int LAST_ALARM_TIME;
-	unsigned int WAKE_UP_TIME;
 	unsigned char SYSTEM_STATUS;
+	
+	unsigned int LAST_ALARM_TIME;
+	unsigned int WAKE_UP_TIME1;
+	unsigned int WAKE_UP_TIME2;
 };
 #pragma pack(pop)
 
-void read_bkp_buffer(unsigned char*buf);
-void write_bkp_buffer(unsigned char*buf);
+#define DEBUG_BKP_REG \
+printf("RTC_INIT_FLAG :%d \r\n",BKPREG.RTC_INIT_FLAG); \
+printf("MOTIONLESS_STATUS :%d \r\n",BKPREG.MOTIONLESS_STATUS); \
+printf("SYSTEM_RESET_COUNTE :%d \r\n",BKPREG.SYSTEM_RESET_COUNTE); \
+printf("SYSTEM_STATUS :%d \r\n",BKPREG.SYSTEM_STATUS); \
+printf("WAKE_UP_TIME1 :%d \r\n",BKPREG.WAKE_UP_TIME1); \
+printf("WAKE_UP_TIME2 :%d \r\n",BKPREG.WAKE_UP_TIME2);
 
+
+extern struct BKP_REG BKPREG;
+
+struct BKP_REG *read_bkp_buffer(unsigned char*buf);
+#define READ_BKP_REG read_bkp_buffer(((unsigned char*)(&BKPREG)));
+void write_bkp_buffer(unsigned char*buf);
+#define WRITE_BKP_REG write_bkp_buffer(((unsigned char*)(&BKPREG)));
+	
 void _set_auto_wakeup_tim(unsigned int time);
 unsigned int _get_auto_wakeup_tim(void);
 

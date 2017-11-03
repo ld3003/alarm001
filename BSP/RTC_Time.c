@@ -105,6 +105,7 @@
 #include <stm32f10x_rcc.h>
 #include "misc.h"
 #include "common.h"
+#include "bsp.h"
 
 /* Private define ------------------------------------------------------------*/
 //#define RTCClockOutput_Enable  /* RTC Clock/64 is output on tamper pin(PC.13) */  
@@ -385,8 +386,9 @@ int RTC_Init(void)
 	RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);	//Ê¹ÄÜPWRºÍBKPÍâÉèÊ±ÖÓ   
 	PWR_BackupAccessCmd(ENABLE);	//Ê¹ÄÜºó±¸¼Ä´æÆ÷·ÃÎÊ  
 	RCC_LSICmd(ENABLE);
-	if (BKP_ReadBackupRegister(BKP_DR1) != 0x5050)		//´ÓÖ¸¶¨µÄºó±¸¼Ä´æÆ÷ÖĞ¶Á³öÊı¾İ:¶Á³öÁËÓëĞ´ÈëµÄÖ¸¶¨Êı¾İ²»Ïàºõ
-	{	 			
+	if (GET_RTCINIT_FLAG != 1)		//´ÓÖ¸¶¨µÄºó±¸¼Ä´æÆ÷ÖĞ¶Á³öÊı¾İ:¶Á³öÁËÓëĞ´ÈëµÄÖ¸¶¨Êı¾İ²»Ïàºõ
+	{
+		printf("RTC  ÖØĞÂ³õÊ¼»¯ %d  \r\n",GET_RTCINIT_FLAG);
 		BKP_DeInit();	//¸´Î»±¸·İÇøÓò 	
 		//RCC_LSEConfig(RCC_LSE_OFF);	//ÉèÖÃÍâ²¿µÍËÙ¾§Õñ(LSE),Ê¹ÓÃÍâÉèµÍËÙ¾§Õñ
 		RCC_RTCCLKConfig(RCC_RTCCLKSource_LSI);
@@ -410,8 +412,9 @@ int RTC_Init(void)
 		RTC_ITConfig(RTC_IT_ALR, ENABLE);	//Ê¹ÄÜRTCÃëÖĞ¶Ï
 		RTC_NVIC_Config();//RCTÖĞ¶Ï·Ö×éÉèÖÃ	
 		
-		RTC_ExitConfigMode(); //ÍË³öÅäÖÃÄ£Ê½  
-		BKP_WriteBackupRegister(BKP_DR1, 0X5050);	//ÏòÖ¸¶¨µÄºó±¸¼Ä´æÆ÷ÖĞĞ´ÈëÓÃ»§³ÌĞòÊı¾İ
+		RTC_ExitConfigMode(); //ÍË³öÅäÖÃÄ£Ê
+		SET_RTCINIT_FLAG;  
+		//BKP_WriteBackupRegister(BKP_DR1, 0X5050);	//ÏòÖ¸¶¨µÄºó±¸¼Ä´æÆ÷ÖĞĞ´ÈëÓÃ»§³ÌĞòÊı¾İ
 	}
 	else//ÏµÍ³¼ÌĞø¼ÆÊ±
 	{

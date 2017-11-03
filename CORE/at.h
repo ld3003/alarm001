@@ -4,6 +4,7 @@
 extern unsigned short gsm_signal;
 extern char IMEI_CODE[16];
 extern unsigned int GSM_LAC,GSM_CI;
+extern float GSM_LAT,GSM_LON;
 
 enum {
 	AT_RESP_OK = 0,
@@ -39,6 +40,7 @@ int AT_AT(char *resp , int len);
 int AT_CSQ(char *resp , int len);
 int AT_GSN(char *resp , int len);
 int AT_CGREG(char *resp , int len);
+int AT_AMGSMLOC(char *resp , int len);
 int AT_MIPCALL(char *resp , int len);
 int AT_MIPOPEN(char *resp , int len);
 int AT_CGMR_CHECK6312(char *resp , int len); //int CGMR(char *resp , int len);

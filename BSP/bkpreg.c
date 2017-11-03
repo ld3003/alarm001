@@ -4,6 +4,8 @@
 #include <stm32f10x_rtc.h>
 #include "common.h"
 
+struct BKP_REG BKPREG;
+
 unsigned int bkp32bit_read(unsigned short a , unsigned short b)
 {
 	
@@ -60,12 +62,12 @@ unsigned int __get_next_wakeup_time(void)
 	return bkp32bit_read(BKP_ReadBackupRegister(BKP_DR6),BKP_ReadBackupRegister(BKP_DR7));
 }
 
-void read_bkp_buffer(unsigned char*buf)
+struct BKP_REG *read_bkp_buffer(unsigned char*buf)
 {
-	unsigned char i=0;
+	int i=0;
 	unsigned short *p;
 	p = (unsigned short *)buf;
-	
+	i = 0;
 	p[i++] = BKP_ReadBackupRegister(BKP_DR1);
 	p[i++] = BKP_ReadBackupRegister(BKP_DR2);
 	p[i++] = BKP_ReadBackupRegister(BKP_DR3);
@@ -74,18 +76,18 @@ void read_bkp_buffer(unsigned char*buf)
 	p[i++] = BKP_ReadBackupRegister(BKP_DR6);
 	p[i++] = BKP_ReadBackupRegister(BKP_DR7);
 	p[i++] = BKP_ReadBackupRegister(BKP_DR8);
-	p[i++] = BKP_ReadBackupRegister(BKP_DR9);
 	p[i++] = BKP_ReadBackupRegister(BKP_DR10);
-	p[i++] = BKP_ReadBackupRegister(BKP_DR11);
-	p[i++] = BKP_ReadBackupRegister(BKP_DR12);
-	p[i++] = BKP_ReadBackupRegister(BKP_DR13);
-	p[i++] = BKP_ReadBackupRegister(BKP_DR14);
-	p[i++] = BKP_ReadBackupRegister(BKP_DR15);
-	p[i++] = BKP_ReadBackupRegister(BKP_DR16);
-	p[i++] = BKP_ReadBackupRegister(BKP_DR17);
-	p[i++] = BKP_ReadBackupRegister(BKP_DR18);
-	p[i++] = BKP_ReadBackupRegister(BKP_DR10);
-	p[i++] = BKP_ReadBackupRegister(BKP_DR20);
+
+	
+//	printf("BKP REG BUF:\r\n");
+//	for(i=0;i<sizeof(BKPREG);i++)
+//	{
+//		printf("%x ",((unsigned char*)(&BKPREG))[i]);
+//	}
+//	printf("\r\n");
+	
+	return &BKPREG;
+
 	//
 }
 void write_bkp_buffer(unsigned char*buf)
@@ -102,18 +104,8 @@ void write_bkp_buffer(unsigned char*buf)
 	BKP_WriteBackupRegister(BKP_DR6,p[i++]);
 	BKP_WriteBackupRegister(BKP_DR7,p[i++]);
 	BKP_WriteBackupRegister(BKP_DR8,p[i++]);
-	BKP_WriteBackupRegister(BKP_DR9,p[i++]);
 	BKP_WriteBackupRegister(BKP_DR10,p[i++]);
-	BKP_WriteBackupRegister(BKP_DR11,p[i++]);
-	BKP_WriteBackupRegister(BKP_DR12,p[i++]);
-	BKP_WriteBackupRegister(BKP_DR13,p[i++]);
-	BKP_WriteBackupRegister(BKP_DR14,p[i++]);
-	BKP_WriteBackupRegister(BKP_DR15,p[i++]);
-	BKP_WriteBackupRegister(BKP_DR16,p[i++]);
-	BKP_WriteBackupRegister(BKP_DR17,p[i++]);
-	BKP_WriteBackupRegister(BKP_DR18,p[i++]);
-	BKP_WriteBackupRegister(BKP_DR19,p[i++]);
-	BKP_WriteBackupRegister(BKP_DR20,p[i++]);
+
 	
 }
 
@@ -123,7 +115,9 @@ void _set_auto_wakeup_tim(unsigned int time)
 	p = (unsigned short *)(&time);
 	
 	BKP_WriteBackupRegister(BKP_DR10,p[0]);
-	BKP_WriteBackupRegister(BKP_DR11,p[1]);
+	BKP_WriteBackupRegister(BKP_DR12,p[1]);
+	
+	printf("@@@ %X %X \r\n",p[0],p[1]);
 	
 }
 
@@ -134,7 +128,9 @@ unsigned int _get_auto_wakeup_tim(void)
 	p = (unsigned short *)(&time);
 	
 	p[0] = BKP_ReadBackupRegister(BKP_DR10);
-	p[1] = BKP_ReadBackupRegister(BKP_DR11);
+	p[1] = BKP_ReadBackupRegister(BKP_DR12);
+	
+	printf("@@@ %X %X \r\n",p[0],p[1]);
 	
 	return time;
 }

@@ -22,8 +22,8 @@
 //服务器信息 
 //#define SERVER_ADDR								"52.80.4.27"
 //#define SERVER_PORT								29100
-#define SERVER_ADDR							"47.93.103.232"
-#define SERVER_PORT							29100
+#define SERVER_ADDR									"47.93.103.232"
+#define SERVER_PORT									29100
 
 //拍照上传配置
 #define PAIZHAO_COUNT							1 //拍照次数
@@ -37,6 +37,9 @@
 #define POWERUP_MIN_TIME					0 //开机沉默时间
 #define ALARM_MIN_TIME					120
 #define MOTIONLESS_TIME					120
+
+#define SEND_IMGERROR_SLEEP_TIME (3600*4)
+
 
 #define __WAKEUP_DBUG
 

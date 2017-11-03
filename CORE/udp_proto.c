@@ -100,7 +100,7 @@ int make_0x1091(unsigned char *data , unsigned char *in_data , short in_len)
 		
 		//------------------
 		
-		body.dianliang = mdata.voltage;
+		body.dianliang = mdata.device_voltage;
 		transfer16((unsigned short*)&body.dianliang);
 		
 

@@ -3,6 +3,8 @@
 #include <stm32f10x_gpio.h>
 #include <stm32f10x_usart.h>
 #include <stm32f10x_rcc.h>
+#include <stm32f10x_adc.h>
+#include <stm32f10x_dma.h>
 #include <misc.h>
 /*******************************************************************************
 * Function Name  : USART_Configuration
@@ -284,6 +286,7 @@ int read_usb_status(void)
 
 unsigned short read_vdd_voltage(void)
 {
+	int i;
 	unsigned short adcval;
 	unsigned short vdd;
 	
@@ -335,7 +338,7 @@ unsigned short read_vdd_voltage(void)
 	
 	//delay
 	
-	for(int i=0;i<0xFFFF;i++){}
+	for(i=0;i<0xFFFF;i++){}
 	
 	adcval = ADC_GetConversionValue(ADC1);
 	vdd = (1200 * 4096 ) / adcval;

@@ -118,6 +118,18 @@ void process_cmddata(void)
 		retcode = 0;
 		//
 	}
+	else if (strstr((char*)recvbuf,"+WCONF=") == (char*)recvbuf)
+	{
+		//gotoApp();
+		retcode = 0;
+		//
+	}
+	else if (strstr((char*)recvbuf,"+RCONF=") == (char*)recvbuf)
+	{
+		//gotoApp();
+		retcode = 0;
+		//
+	}
 	else if (strstr((char*)recvbuf,"+AT") == (char*)recvbuf)
 	{
 		retcode = 0;

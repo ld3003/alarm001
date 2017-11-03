@@ -69,7 +69,9 @@ int main(void)
 	/*RCC SYSTICK RTC 初始化*/
 	RCC_GetClocksFreq(&rccClk);
 	SysTick_Config(rccClk.HCLK_Frequency / 100);
-	RTC_Init();
+	//
+	RCC_APB1PeriphClockCmd(RCC_APB1Periph_PWR | RCC_APB1Periph_BKP, ENABLE);	//使能PWR和BKP外设时钟   
+	PWR_BackupAccessCmd(ENABLE);	//使能后备寄存器访问  
 	
 	#ifdef ENABLE_WAKEUP_DBG
 	BSP_UART1Config(115200);
@@ -122,7 +124,7 @@ static void bootloader(void)
 	
 	printf("Bootloader STATUS %d \r\n",GET_BOOTLOADER_STATUS);
 	
-	
+	led0_on();
 	printf("CheckUSB @ 10 Second...\r\n");
 	SysTickCntRecord = SysTickCnt;
 	for(;;)
@@ -138,7 +140,6 @@ static void bootloader(void)
 			break;
 		}
 	}
-	
 	
 	led0_on();
 	ENABLE_USB;

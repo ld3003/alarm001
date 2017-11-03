@@ -30,12 +30,6 @@ struct CONFIG_DATA {
 	//
 };
 
-struct BACKUP_CONFIG { 
-	unsigned int wakeuptime;
-	unsigned int tmpFlag1:2;
-	unsigned int tmpFlag2:2;
-	unsigned int tmpFlag3:3;
-};
 
 
 

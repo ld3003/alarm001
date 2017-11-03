@@ -13,6 +13,7 @@
 
 unsigned short gsm_signal = 0;
 unsigned int GSM_LAC,GSM_CI;
+float GSM_LAT,GSM_LON;
 
 int at_cmd_wait(char *at , int(*at_cb)(char*resp,int resplen) , int(*at_wait)(char*resp,int resplen) , int timeout)
 {
@@ -279,6 +280,41 @@ int AT_CGREG(char *resp , int len)
 	}
 	else{
 		return AT_RESP_CGREGNOTREADY;
+	}
+	//
+}
+
+int AT_AMGSMLOC(char *resp , int len)
+{
+	if (strstr(resp,"+AMGSMLOC: 0"))
+	{
+		char *p1;
+		char *p2;
+		char *p3;
+		char *p4;
+		char *p5;
+		
+		p1 = strstr(resp,",");
+		p2 = strstr(p1+1,",");
+		p3 = strstr(p2+1,",");
+		printf("GET LOC : %s \r\n",resp);
+		if(((unsigned int)p1*(unsigned int)p2*(unsigned int)p3) > 0)
+		{
+			
+			p2[0] = 0x0;
+			p3[0] = 0x0;
+			sscanf(p1+1,"%f",&GSM_LAT);
+			sscanf(p2+1,"%f",&GSM_LON);
+			printf("LAT %s %f\r\n",p1+1,GSM_LAT);
+			printf("LON %s %f\r\n",p2+1,GSM_LON);
+		}
+		
+		
+		
+		return AT_RESP_OK;
+	}
+	else{
+		return AT_RESP_ERROR;
 	}
 	//
 }

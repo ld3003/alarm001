@@ -27,6 +27,8 @@ typedef enum {
 	MODEM_GPRS_CIPMOD,			//进行网络注册
 	MODEM_GPRS_MIPCALL_SUCCESS,			//进行网络注册
 	MODEM_GPRS_MIPOPEN_SUCCESS,			//创建SOCKET连接
+	MODEM_GPRS_GETLOC,
+	MODEM_GPRS_ERROR,
 	PROTO_CHECK_1091,
 	PROTO_SEND_ALARM,
 	PROTO_RECV_2091,
@@ -56,6 +58,7 @@ enum {
 
 struct MAINLOOP_DATA {
 	SYSTEM_STATUS status;								//状态机
+	
 	unsigned char doing;								//
 	
 	unsigned char _10a0type;
@@ -63,6 +66,7 @@ struct MAINLOOP_DATA {
 	//计数器
 	unsigned char modem_reset_cnt;			//模块重启计数器
 	unsigned char test_at_cnt;
+	unsigned char modem_gprs_error_cnt;
 	unsigned char status_running_cnt;		//当前状态被执行了多少次
 	
 	unsigned char send_10a0_cnt;
@@ -74,10 +78,8 @@ struct MAINLOOP_DATA {
 	
 	unsigned int paizhao_time;
 	
-	unsigned char upload_index;					//上传索引
-	unsigned char need_uload_cnt;				//需要上传几张
-	
-	unsigned short voltage;
+	unsigned char cam_ok;
+	unsigned short device_voltage;
 	
 };
 
