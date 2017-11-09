@@ -37,6 +37,9 @@
 #define SERIALPORT		fputcmod = 0;
 #define USBPORT				fputcmod = 1;
 
+extern unsigned char enable_led_shanshuo;
+extern unsigned char led_shanshuo_pinlv;
+
 static void process_atcmd(void);
 static void process_usbdata(void);
 static void bootloader(void);
@@ -64,7 +67,8 @@ int main(void)
 	watch_dog_config();
 	
 	led0_off();
-	
+	enable_led_shanshuo = 1;
+	led_shanshuo_pinlv = 100;
 	
 	/*RCC SYSTICK RTC ≥ı ºªØ*/
 	RCC_GetClocksFreq(&rccClk);
@@ -124,7 +128,6 @@ static void bootloader(void)
 	
 	printf("Bootloader STATUS %d \r\n",GET_BOOTLOADER_STATUS);
 	
-	led0_on();
 	printf("CheckUSB @ 10 Second...\r\n");
 	SysTickCntRecord = SysTickCnt;
 	for(;;)
@@ -141,7 +144,7 @@ static void bootloader(void)
 		}
 	}
 	
-	led0_on();
+	led_shanshuo_pinlv = 30;
 	ENABLE_USB;
 
 	USB_Config();

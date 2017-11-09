@@ -104,8 +104,21 @@ void SerialThread::burnFW()
             //加载固件文件
             loadFW();
 
-            serialport->write(QByteArray("+STARTBURN\r\n"));
-            serialport->waitForReadyRead(1000);
+            #define BOOTLOADER_SIZE (1024*20)
+            #define APPLICATION_SIZE (1024*64)
+            #define APPLICATION_ADDRESS (0x8000000 + BOOTLOADER_SIZE)
+            #define DOWNLOAD_ADDRESS (0x8000000 + BOOTLOADER_SIZE + APPLICATION_SIZE)
+            #define DOWNLOAD_SIZE (1024*44)
+
+            QString brunstr = "+STARTBURN";
+            brunstr.append("=");
+            brunstr.append(QString::number(APPLICATION_ADDRESS));
+            brunstr.append(",");
+            brunstr.append(QString::number(APPLICATION_SIZE));
+            brunstr.append("\r\n");
+
+            serialport->write(brunstr.toLocal8Bit());
+            serialport->waitForReadyRead(2000);
             serialRcvArray = serialport->readAll();
             if (strstr(serialRcvArray.data(),"OK") == serialRcvArray.data())
             {

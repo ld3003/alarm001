@@ -64,13 +64,6 @@ int main(void)
 		
 	init_uart2_buffer();
 	
-	//²âÊÔµÍ¹¦ºÄ
-	//utimer_sleep(3000);
-	//IOI2C_Init();
-	//init_mma845x();
-	//Sys_Enter_DeepStandby();
-	
-	
 	for(;;){feed_watchdog();mainloop();}
 	
 	return 0;
@@ -89,12 +82,14 @@ static void takephoto(void)
 			int photolen = 0;
 			unsigned int takeTime;
 			
+			#define OV2640_REINIT_COUNT 3
+			
 			alloc_jpegbuffer();
 			ov_poweron();
 			_config_mco();
 			InitSCCB();
 			
-			for(i=0;i<10;i++)
+			for(i=1;i<=OV2640_REINIT_COUNT;i++)
 			{
 				ov_poweron();
 				initOV = ov2640_init();

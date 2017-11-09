@@ -84,8 +84,29 @@ void process_cmddata(void)
 	}
 	else if (strstr((char*)recvbuf,"+STARTBURN") == (char*)recvbuf)
 	{
+		//+STARTBURN=1230342348,1024\r\n;
+		char *p1,*p2,*p3,*p4,*p5,*p6;
+		unsigned int address,size;
+		//
+		p1 = strstr((char*)recvbuf,"=");
+		p2 = strstr(p1+1,",");
+		p3 = strstr(p2+1,"\r");
+		
+		p1[0] = 0x0;
+		p2[0] = 0x0;
+		
+		printf("[%s] [%s] [%s] \r\n",p1+1,p2+1,p3+1);
+		
+		printf("@@ address [%s] size [%s] \r\n",p1+1,p2+1);
+		
+		sscanf(p1+1,"%d",&address);
+		sscanf(p2+1,"%d",&size);
+		
+		printf("## address [%d:%d] size [%d:%d] \r\n",APPLICATION_ADDRESS,address,APPLICATION_SIZE,size);
+		
 		//¿ªÊ¼ÉÕÂ¼
-		FLASH_ProgramStart(APPLICATION_ADDRESS,APPLICATION_SIZE);
+		//FLASH_ProgramStart(APPLICATION_ADDRESS,APPLICATION_SIZE);
+		FLASH_ProgramStart(address,size);
 		retcode = 0;
 		//
 	}
@@ -113,6 +134,12 @@ void process_cmddata(void)
 		retcode = 0;
 	}
 	else if (strstr((char*)recvbuf,"+APP") == (char*)recvbuf)
+	{
+		//gotoApp();
+		retcode = 0;
+		//
+	}
+	else if (strstr((char*)recvbuf,"+STARTWCONF=") == (char*)recvbuf)
 	{
 		//gotoApp();
 		retcode = 0;

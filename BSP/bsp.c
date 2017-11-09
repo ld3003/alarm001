@@ -241,6 +241,7 @@ void usben_off(void)
 
 void led0_fanzhuan(void)
 {
+	LED0_GPIO->ODR ^= LED0_PIN;
 }
 
 void rtc_init(void)

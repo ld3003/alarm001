@@ -134,9 +134,19 @@ void PendSV_Handler(void)
   */
 #include "bsp.h"
 unsigned int SysTickCnt = 0;
+unsigned char enable_led_shanshuo = 0;
+unsigned char led_shanshuo_pinlv = 100;
 void SysTick_Handler(void)
 {
+	static unsigned char ledcnt = 0;
 	SysTickCnt ++;
+	ledcnt ++;
+	if ((ledcnt >= led_shanshuo_pinlv) && (enable_led_shanshuo))
+	{
+		ledcnt = 0;
+		led0_fanzhuan();
+	}
+	
 }
 
 
