@@ -58,6 +58,7 @@ enum {
 
 struct MAINLOOP_DATA {
 	SYSTEM_STATUS status;								//×´Ì¬»ú
+	SYSTEM_STATUS next_status;
 	
 	unsigned char doing;								//
 	

@@ -460,6 +460,7 @@ void mainloop(void)
 				//网络已经注册成功，进入查询信号质量
 				printf("检查SIM卡成功\r\n");
 				mdata.status = MODEM_CHECK_CSQ;
+				mdata.next_status = MODEM_GPRS_READY;
 				
 			}else{
 				printf("检查SIM卡失败,重启模组\r\n");
@@ -480,7 +481,7 @@ void mainloop(void)
 			if (AT_RESP_OK == ret)
 			{
 				printf("当前信号质量 : %d\r\n",gsm_signal);
-				mdata.status = MODEM_GPRS_READY;
+				mdata.status = mdata.next_status;
 			}else{
 				if (mdata.status_running_cnt > 3)
 				{
@@ -563,7 +564,8 @@ void mainloop(void)
 				if (mdata.status_running_cnt > 5)
 					mdata.status = MODEM_GPRS_ERROR;
 			}else{
-				mdata.status = MODEM_GPRS_GETLOC;
+				mdata.status = MODEM_CHECK_CSQ;
+				mdata.next_status = MODEM_GPRS_CIPMOD;
 			}
 			break;
 			
@@ -580,9 +582,6 @@ void mainloop(void)
 				//
 			}else{
 			}
-			
-			
-			
 			break;
 		}
 		

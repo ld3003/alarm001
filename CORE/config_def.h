@@ -12,21 +12,27 @@ enum OTA_FLAG_ENUM {
 struct CONFIG_DATA {
 	char version;
 	
+	/*
+	工作模式:
+	0,GPRS
+	1,GSM
+	*/
+	char workmode;
+	
+	
 	char ipaddress[32];
 	char ipport[8];
 	
-	unsigned int TIME1;
-	unsigned int TIME2;
-	unsigned int LASTTIME_PZ;
-	unsigned int LASTTIME_COMM;
+	char phonenum[13][3];
 	
-	unsigned char alarm_flag;		//0： 1： 2：已经解除报警
+	/*
+	电话模式
+	1，短信
+	2，电话
+	3，短信+电话
+	*/
+	char phonemode[3];
 	
-	char trace[512];
-	unsigned int trace_time;
-	unsigned short last_voltage;
-	
-	char OTA_FLAG;
 	//
 };
 

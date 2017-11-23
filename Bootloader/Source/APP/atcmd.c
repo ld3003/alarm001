@@ -102,6 +102,7 @@ void process_cmddata(void)
 		sscanf(p1+1,"%d",&address);
 		sscanf(p2+1,"%d",&size);
 		
+		
 		printf("## address [%d:%d] size [%d:%d] \r\n",APPLICATION_ADDRESS,address,APPLICATION_SIZE,size);
 		
 		//¿ªÊ¼ÉÕÂ¼
@@ -139,22 +140,29 @@ void process_cmddata(void)
 		retcode = 0;
 		//
 	}
-	else if (strstr((char*)recvbuf,"+STARTWCONF=") == (char*)recvbuf)
+	else if (strstr((char*)recvbuf,"+RFLASH=") == (char*)recvbuf)
 	{
-		//gotoApp();
-		retcode = 0;
+		char *p1,*p2,*p3,*p4,*p5,*p6;
+		unsigned int address,size;
 		//
-	}
-	else if (strstr((char*)recvbuf,"+WCONF=") == (char*)recvbuf)
-	{
-		//gotoApp();
-		retcode = 0;
-		//
-	}
-	else if (strstr((char*)recvbuf,"+RCONF=") == (char*)recvbuf)
-	{
-		//gotoApp();
-		retcode = 0;
+		p1 = strstr((char*)recvbuf,"=");
+		p2 = strstr(p1+1,",");
+		p3 = strstr(p2+1,"\r");
+		
+		p1[0] = 0x0;
+		p2[0] = 0x0;
+		
+		printf("[%s] [%s] [%s] \r\n",p1+1,p2+1,p3+1);
+		
+		printf("@@ address [%s] size [%s] \r\n",p1+1,p2+1);
+		
+		sscanf(p1+1,"%d",&address);
+		sscanf(p2+1,"%d",&size);
+		
+		//printf("DATA : %s \r\n",(unsigned char*)address);
+		write_usb_buffer((unsigned char*)address,size);
+		
+		retcode = 10;
 		//
 	}
 	else if (strstr((char*)recvbuf,"+AT") == (char*)recvbuf)
@@ -163,18 +171,32 @@ void process_cmddata(void)
 		//
 	}
 	
-	
-	
-	if (retcode >= 0)
+	switch(retcode)
 	{
-		char tmpbuf[32];
-		snprintf(tmpbuf,32,"OK:%d\r\n",retcode);
-		write_usb_buffer((unsigned char*)tmpbuf,strlen(tmpbuf));
-	}else{
-		char tmpbuf[32];
-		snprintf(tmpbuf,32,"ERROR:%d\r\n",retcode);
-		write_usb_buffer((unsigned char*)tmpbuf,strlen(tmpbuf));
+		case 0:
+		{
+			char tmpbuf[32];
+			snprintf(tmpbuf,32,"OK:%d\r\n",retcode);
+			write_usb_buffer((unsigned char*)tmpbuf,strlen(tmpbuf));
+			break;
+		}
+		
+		case 10:
+		{
+			char tmpbuf[32];
+			snprintf(tmpbuf,32,"OK:%d\r\n",retcode);
+			write_usb_buffer((unsigned char*)tmpbuf,strlen(tmpbuf));
+			break;
+		}
+		
+		default:
+		{
+			char tmpbuf[32];
+			snprintf(tmpbuf,32,"ERROR:%d\r\n",retcode);
+			write_usb_buffer((unsigned char*)tmpbuf,strlen(tmpbuf));
+		}
 	}
+	
 	//
 }
 

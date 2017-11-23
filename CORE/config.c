@@ -21,20 +21,18 @@ char * data_2_json(struct CONFIG_DATA * in_data)
 	cJSON_AddStringToObject(pJsonRoot, "ipaddress", mem->cfg_data.ipaddress);
 	cJSON_AddStringToObject(pJsonRoot, "ipport", mem->cfg_data.ipport);
 	
-	cJSON_AddNumberToObject(pJsonRoot, "TIME1", mem->cfg_data.TIME1);
-	cJSON_AddNumberToObject(pJsonRoot, "TIME2", mem->cfg_data.TIME2);
-	cJSON_AddNumberToObject(pJsonRoot, "LASTTIME_PZ", mem->cfg_data.LASTTIME_PZ);
-	cJSON_AddNumberToObject(pJsonRoot, "LASTTIME_COMM", mem->cfg_data.LASTTIME_COMM);
-	//LASTTIME_PZ
-	//LASTTIME_COMM
+	cJSON_AddStringToObject(pJsonRoot, "phonenum0", mem->cfg_data.phonenum[0]);
+	cJSON_AddStringToObject(pJsonRoot, "phonenum1", mem->cfg_data.phonenum[1]);
+	cJSON_AddStringToObject(pJsonRoot, "phonenum2", mem->cfg_data.phonenum[2]);
 	
-	cJSON_AddNumberToObject(pJsonRoot, "last_voltage", mem->cfg_data.last_voltage);
+	cJSON_AddNumberToObject(pJsonRoot, "phonemode0", mem->cfg_data.phonemode[0]);
+	cJSON_AddNumberToObject(pJsonRoot, "phonemode1", mem->cfg_data.phonemode[1]);
+	cJSON_AddNumberToObject(pJsonRoot, "phonemode2", mem->cfg_data.phonemode[2]);
 	
-	cJSON_AddNumberToObject(pJsonRoot, "alarm_flag", mem->cfg_data.alarm_flag);
-	cJSON_AddNumberToObject(pJsonRoot, "trace_time", mem->cfg_data.trace_time);
-	cJSON_AddStringToObject(pJsonRoot, "trace",  mem->cfg_data.trace);
+	cJSON_AddNumberToObject(pJsonRoot, "workmode", mem->cfg_data.workmode);
 	
 	cJSON_AddStringToObject(pJsonRoot, "JSON_FLAG", "JSON");
+	
 	DEBUG_ERROR(0);
 	p = cJSON_Print(pJsonRoot);
 	DEBUG_ERROR(0);
@@ -74,41 +72,39 @@ void json_2_data(char * in_json , struct CONFIG_DATA * out_data)
     if(NULL != pSub)
     {snprintf(mem->cfg_data.ipaddress,sizeof(mem->cfg_data.ipaddress),"%s",pSub->valuestring);}
 		
-		pSub = cJSON_GetObjectItem(pJson, "trace");
-    if(NULL != pSub)
-    {snprintf(mem->cfg_data.trace,sizeof(mem->cfg_data.trace),"%s",pSub->valuestring);}
 		
 		pSub = cJSON_GetObjectItem(pJson, "ipport");
     if(NULL != pSub)
     {snprintf(mem->cfg_data.ipaddress,sizeof(mem->cfg_data.ipport),"%s",pSub->valuestring);}
 		
-		pSub = cJSON_GetObjectItem(pJson, "TIME1");
+	
+		pSub = cJSON_GetObjectItem(pJson, "phonenum0");
     if(NULL != pSub)
-    {mem->cfg_data.TIME1 = pSub->valueuint;}
+    {snprintf(mem->cfg_data.phonenum[0],sizeof(mem->cfg_data.phonenum[0]),"%s",pSub->valuestring);}
 		
-		pSub = cJSON_GetObjectItem(pJson, "TIME2");
+		pSub = cJSON_GetObjectItem(pJson, "phonenum1");
     if(NULL != pSub)
-    {mem->cfg_data.TIME2 = pSub->valueuint;}
+    {snprintf(mem->cfg_data.phonenum[1],sizeof(mem->cfg_data.phonenum[0]),"%s",pSub->valuestring);}
 		
-		pSub = cJSON_GetObjectItem(pJson, "LASTTIME_PZ");
+		pSub = cJSON_GetObjectItem(pJson, "phonenum2");
     if(NULL != pSub)
-    {mem->cfg_data.LASTTIME_PZ = pSub->valueuint;}
+    {snprintf(mem->cfg_data.phonenum[2],sizeof(mem->cfg_data.phonenum[0]),"%s",pSub->valuestring);}
 		
-		pSub = cJSON_GetObjectItem(pJson, "LASTTIME_COMM");
+		pSub = cJSON_GetObjectItem(pJson, "phonemode0");
     if(NULL != pSub)
-    {mem->cfg_data.LASTTIME_COMM = pSub->valueuint;}
+    {mem->cfg_data.phonemode[0] = pSub->valueint;}
 		
-		pSub = cJSON_GetObjectItem(pJson, "last_voltage");
+		pSub = cJSON_GetObjectItem(pJson, "phonemode1");
     if(NULL != pSub)
-    {mem->cfg_data.last_voltage = pSub->valueuint;}
+    {mem->cfg_data.phonemode[1] = pSub->valueint;}
 		
-		pSub = cJSON_GetObjectItem(pJson, "alarm_flag");
+		pSub = cJSON_GetObjectItem(pJson, "phonemode2");
     if(NULL != pSub)
-    {mem->cfg_data.alarm_flag = pSub->valueuint;}
+    {mem->cfg_data.phonemode[2] = pSub->valueint;}
 		
-		pSub = cJSON_GetObjectItem(pJson, "trace_time");
+		pSub = cJSON_GetObjectItem(pJson, "workmode");
     if(NULL != pSub)
-    {mem->cfg_data.trace_time = pSub->valueuint;}
+    {mem->cfg_data.workmode = pSub->valueint;}
 		
 		cJSON_Delete(pJson);
 		
