@@ -29,6 +29,7 @@ typedef enum {
 	MODEM_GPRS_MIPOPEN_SUCCESS,			//创建SOCKET连接
 	MODEM_GPRS_GETLOC,
 	MODEM_GPRS_ERROR,
+	MODEM_IDLE,
 	PROTO_CHECK_1091,
 	PROTO_SEND_ALARM,
 	PROTO_RECV_2091,
@@ -93,6 +94,7 @@ void mainloop(void);									//程序循环
 	数据发送函数
 	返回值 -1 通信错误 0 未收到数据 >0 收到数据长度
 */
+int poll_data_A6(unsigned char *outdata, int timeout);
 int push_data_A6(unsigned char *data , int length , unsigned char *outdata , int timeout);
 
 #endif

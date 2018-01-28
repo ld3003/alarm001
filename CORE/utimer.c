@@ -82,9 +82,13 @@ void utimer_sleep(int ms)
 	
 	for(;;)
 	{
+		//printf("__time_10ms_cnt[0] == %d\r\n",__time_10ms_cnt[0]);
+		__disable_irq();
 		if ((__time_10ms_cnt[0] * 10) > ms)
 		{
 			break;
 		}
+		__enable_irq();
 	}
+	__enable_irq();
 }

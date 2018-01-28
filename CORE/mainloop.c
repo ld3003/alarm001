@@ -631,6 +631,15 @@ void mainloop(void)
 			
 			break;
 		}
+		
+		case MODEM_IDLE:
+		{
+			//在这个状态下会接收服务器主动发送过来的数据
+			status_master(mdata.status,60*1000);
+			
+			
+			break;
+		}
 		case MODEM_GPRS_MIPOPEN_SUCCESS:
 		{
 			status_master(mdata.status,60*1000);
@@ -1171,6 +1180,31 @@ static int push_img_routing(void)
 	//
 }
 
+int poll_data_A6(unsigned char *outdata, int timeout)
+{
+	int i = 500;
+	for(i=0;i<timeout;)
+	{
+		if (uart2_rx_buffer_index > 0)
+		{
+			utimer_sleep(500);
+			break;
+		}
+		utimer_sleep(500);
+		i+=500;
+	}
+	
+	memcpy(outdata,uart2_rx_buffer,uart2_rx_buffer_index);
+	
+	if (strstr(uart2_rx_buffer,"UDP ERROR"))
+	{
+		printf("UDP ERROR:%s\r\n",uart2_rx_buffer);
+		return -1;
+	}
+	
+	return uart2_rx_buffer_index;
+	//
+}
 int push_data_A6(unsigned char *data , int length , unsigned char *outdata , int timeout)
 {
 	int i=0;

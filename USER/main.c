@@ -103,6 +103,13 @@ static void takephoto(void)
 			if (initOV != 0)
 				goto endtakephoto;
 			
+			//等待5秒钟，让曝光完全
+			
+			disable_href_isr();
+			printf("wait ov2640 init ... \r\n");
+			utimer_sleep(5000);
+			printf("wait ov2640 init finish . \r\n");
+			
 			photolen = ov2640_read();
 			if (photolen > 0)
 			{

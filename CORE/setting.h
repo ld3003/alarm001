@@ -17,7 +17,6 @@
 
 //服务器信息 
 #define SERVER_ADDR								"easy-iot.cc"
-//#define SERVER_ADDR									"47.93.103.232"
 
 #define SERVER_PORT									29100
 

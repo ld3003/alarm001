@@ -31,6 +31,7 @@ private slots:
 private:
     Ui::USBTest *ui;
     SerialThread *m_serialThread;
+    QTimer * timer;
 };
 
 #endif // USBTEST_H

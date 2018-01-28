@@ -10,12 +10,16 @@ USBTest::USBTest(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::USBTest)
 {
+    timer = new QTimer(this);
     ui->setupUi(this);
 
     m_serialThread = new SerialThread(0);
 
+    connect(timer,SIGNAL(timeout()),this,SLOT(on_checkConn_clicked()));
+
     connect(m_serialThread,SIGNAL(serialInfoStr(QString)),this,SLOT(serialInfoRecv(QString)), Qt::QueuedConnection);
 
+    //timer->start(1000);
 
 }
 

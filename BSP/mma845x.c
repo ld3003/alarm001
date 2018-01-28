@@ -62,11 +62,13 @@ static void read_i2c_dev(u8 devid , u8 reg , u8 value , u8 num , u8 vs)
 char init_mma845x(void)
 {
 
-	unsigned char xxxvalue;
+	unsigned char testvalue;
 	extern unsigned short I2C_Erorr_Count;
 	
 	
 	IOI2C_Init();
+	
+	printf("Init MMA8452Q Failed [%d][%d]! \r\n",I2C_Erorr_Count,__LINE__);
 	
 	write_i2c_dev(m_define_device_address_write, 
 			m_define_ctl_reg_1, 
@@ -74,15 +76,6 @@ char init_mma845x(void)
 			m_define_value_how_much_byte_1, 
 			m_define_value_setting);
 	
-	
-
-	read_i2c_dev(m_define_device_address_read,
-			m_define_ctl_reg_1, 
-			m_define_value_ctl_reg_1_standby, 
-			m_define_value_how_much_byte_1, 
-			m_define_value_setting
-	
-	);
 
 	write_i2c_dev(m_define_device_address_write,
 			m_define_ctl_reg_2,
@@ -139,9 +132,6 @@ char init_mma845x(void)
 			m_define_value_how_much_byte_1,
 			m_define_value_setting);
 			
-			
-			
-
 
 	write_i2c_dev(m_define_device_address_write, 
 			m_define_ctl_reg_1, 
@@ -163,20 +153,18 @@ char init_mma845x(void)
 			m_define_value_setting);
 
 			
-	xxxvalue = 0;
+	testvalue = 0;
 	//static void read_i2c_dev(u8 devid , u8 reg , u8 value , u8 num , u8 vs)
-	IICreadBytes(m_define_device_address_write,m_define_trans_threshold,1,&xxxvalue);
-	
-	printf("###########xxxvalue %d\r\n",xxxvalue);
+	IICreadBytes(m_define_device_address_write,m_define_trans_threshold,1,&testvalue);
 			
-	if (I2C_Erorr_Count == 0)
+	if ((I2C_Erorr_Count == 0) &&  (testvalue == 1))
 	{
 		printf("Init MMA8452Q SUCCESS ! \r\n");
 		return 1;
 	}
 	else
 	{
-		printf("Init MMA8452Q Failed [%d]! \r\n",I2C_Erorr_Count);
+		printf("Init MMA8452Q Failed [%d][%d]! \r\n",I2C_Erorr_Count,__LINE__);
 		return 0;
 	}
 	
