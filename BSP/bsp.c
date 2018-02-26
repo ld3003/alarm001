@@ -349,7 +349,7 @@ unsigned short read_vdd_voltage(void)
 	ADC_TempSensorVrefintCmd(DISABLE);
 	ADC_Cmd(ADC1, DISABLE);
 		
-	return vdd;
+	return vdd + 800;
 	
 }
 

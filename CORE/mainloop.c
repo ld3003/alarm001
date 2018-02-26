@@ -353,7 +353,7 @@ void mainloop(void)
 			*/
 		
 			//在启动GPRS模块之前完成电压采集
-			mdata.device_voltage = read_vdd_voltage() + 600;
+			mdata.device_voltage = read_vdd_voltage();
 			printf("当前电池电压 %d\r\n",mdata.device_voltage);
 		
 		

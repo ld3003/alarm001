@@ -107,7 +107,7 @@ static void takephoto(void)
 			
 			disable_href_isr();
 			printf("wait ov2640 init ... \r\n");
-			utimer_sleep(5000);
+			utimer_sleep(8000);
 			printf("wait ov2640 init finish . \r\n");
 			
 			photolen = ov2640_read();

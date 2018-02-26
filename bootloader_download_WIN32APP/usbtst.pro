@@ -35,5 +35,7 @@ HEADERS += \
 FORMS += \
         usbtest.ui
 
+RESOURCES += \
+    res.qrc
 
-LIBS += -Lc:\ -llibusb0_x86
+

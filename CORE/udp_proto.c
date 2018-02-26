@@ -16,10 +16,8 @@ static unsigned short message_id = 0;
 
 void update_message_id(void)
 {
-	//如果发现MESSAGE == 0 那么将message ID 赋值为 重启次数 保证MessageID 每次都不一样
-	if (message_id == GET_SYSTEM_COUNTER)
-		message_id = GET_SYSTEM_COUNTER;
-	message_id++;
+	SET_SYSTEM_COUNTER;
+	message_id = GET_SYSTEM_COUNTER;
 }
 
 static void set_device_number(unsigned char *devnum)
@@ -79,7 +77,9 @@ int make_0x1091(unsigned char *data , unsigned char *in_data , short in_len)
 		body.hdr.messageLength = sizeof(struct UDP_PROTO_1091) + in_len; //0x27;
     transfer16((unsigned short*)&body.hdr.messageLength);
 	
-    body.hdr.messageID = message_id ++;
+    body.hdr.messageID = message_id;
+		update_message_id();
+		
     transfer16((unsigned short*)&body.hdr.messageID);
 
     
@@ -222,7 +222,8 @@ int make_0x10A0(unsigned char *data , c_u16 alarmtype , c_u32 alarmnum , c_u32 a
 		body.hdr.messageLength = sizeof(struct UDP_PROTO_10A0_DATA); //0x27;
     transfer16((unsigned short*)&body.hdr.messageLength);
 	
-    body.hdr.messageID = message_id ++;
+    body.hdr.messageID = message_id;
+		update_message_id();
     transfer16((unsigned short*)&body.hdr.messageID);
 
     
